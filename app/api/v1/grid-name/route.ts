@@ -12,7 +12,7 @@ function noStore(res: NextResponse) {
 function normalizeName(raw: unknown) {
   const s = String(raw ?? "").trim();
   if (s.length > 32) return null;
-  return s; // ""もOK
+  return s; // ""もOK（命名解除）
 }
 
 export async function PATCH(req: NextRequest) {
