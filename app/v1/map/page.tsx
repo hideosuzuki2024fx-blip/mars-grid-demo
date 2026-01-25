@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useGridParam } from "../_shared/useGridParam";
 type Grid = {
   id: string;
   r: number;
@@ -162,7 +163,7 @@ export default function MapPage() {
     }
   }
 
-  const selectedId = sel?.id ?? "";
+  const selectedId = gridParamId || sel?.id || "";
   const meUrl = selectedId ? `/v1/me?grid=${encodeURIComponent(selectedId)}&embed=1` : "/v1/me?embed=1";
   const marketUrl = selectedId ? `/v1/market?grid=${encodeURIComponent(selectedId)}&embed=1` : "/v1/market?embed=1";
 
@@ -421,3 +422,4 @@ export default function MapPage() {
     </div>
   );
 }
+
