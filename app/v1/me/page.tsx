@@ -49,7 +49,7 @@ export default function MePage() {
       const r = await fetch(`/api/v1/grids/${gridId}/name`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: draft[gridId] ?? "" }),
+        body: JSON.stringify({ gridId, name: draft[gridId] ?? "" }),
         cache: "no-store",
       });
       await readJsonOrThrow(r);
