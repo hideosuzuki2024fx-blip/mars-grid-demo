@@ -89,7 +89,7 @@ export default function MePage() {
                 <div style={{ fontWeight: 800 }}>{g.id}</div>
                 <div style={{ opacity: 0.85 }}>locked: {g.locked ? "YES" : "NO"}</div>
               </div>
-              <a href="/v1/market">→ Market</a>
+              <a href={`/v1/market?grid=${g.id}`}>→ Market</a>
             </div>
 
             <div style={{ marginTop: 10, display: "flex", gap: 8 }}>

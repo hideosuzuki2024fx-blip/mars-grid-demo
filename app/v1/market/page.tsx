@@ -1,3 +1,4 @@
+import { useSearchParams } from "next/navigation";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,7 +14,12 @@ export default function MarketPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [gridId, setGridId] = useState("");
-  const [price, setPrice] = useState(200);
+  const sp = useSearchParams();
+
+  useEffect(() => {
+    const g = sp.get("grid");
+    if (g) setGridId(g);
+  }, [sp]);  const [price, setPrice] = useState(200);
   const [busy, setBusy] = useState(false);
 
   async function load() {
