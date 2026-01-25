@@ -1,3 +1,4 @@
+import { useGridParam } from "../_shared/useGridParam";
 "use client";
 import { useSearchParams } from "next/navigation";
 
@@ -15,11 +16,7 @@ export default function MarketPage() {
   const [err, setErr] = useState<string | null>(null);
   const [gridId, setGridId] = useState("");
   const sp = useSearchParams();
-
-  useEffect(() => {
-    const g = sp.get("grid");
-    if (g) setGridId(g);
-  }, [sp]);  const [price, setPrice] = useState(200);
+const [price, setPrice] = useState(200);
   const [busy, setBusy] = useState(false);
 
   async function load() {
@@ -139,3 +136,4 @@ export default function MarketPage() {
     </div>
   );
 }
+
