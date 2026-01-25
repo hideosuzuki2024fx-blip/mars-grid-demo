@@ -11,6 +11,8 @@ type Grid = {
   owner_handle: string | null;
 };
 
+type PanelMode = "none" | "me" | "market";
+
 export default function MapPage() {
   const [grids, setGrids] = useState<Grid[]>([]);
   const [sel, setSel] = useState<Grid | null>(null);
@@ -18,12 +20,14 @@ export default function MapPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [myHandle, setMyHandle] = useState<string | null>(null);
 
-  // ズーム（1x / 1.5x / 2x）
+  // ズーム（1x/1.5x/2x）
   const [zoom, setZoom] = useState<1 | 1.5 | 2>(1);
-
   const BASE_CELL = 32;
   const CELL = Math.round(BASE_CELL * zoom);
   const GAP = Math.max(3, Math.round(4 * zoom));
+
+  // Mapを開いたまま操作する右パネル
+  const [panel, setPanel] = useState<PanelMode>("none");
 
   async function loadMe() {
     try {
@@ -53,7 +57,8 @@ export default function MapPage() {
   }, []);
 
   const dims = useMemo(() => {
-    let maxR = 0, maxC = 0;
+    let maxR = 0,
+      maxC = 0;
     for (const g of grids) {
       if (g.r > maxR) maxR = g.r;
       if (g.c > maxC) maxC = g.c;
@@ -84,16 +89,18 @@ export default function MapPage() {
 
   function borderFor(g: Grid) {
     const isSel = sel?.id === g.id;
-
-    // 優先順位：選択 > locked > 自分 > 通常
     if (isSel) return "3px solid #4AA3FF";
     if (g.locked) return "3px solid #F7D94C";
     if (isMine(g)) return "2px solid rgba(255,255,255,0.85)";
     return "1px solid #444";
   }
 
+  const selectedId = sel?.id ?? "";
+  const meUrl = selectedId ? `/v1/me?grid=${encodeURIComponent(selectedId)}` : "/v1/me";
+  const marketUrl = selectedId ? `/v1/market?grid=${encodeURIComponent(selectedId)}` : "/v1/market";
+
   return (
-    <div>
+    <div style={{ position: "relative" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Map</h2>
 
@@ -173,11 +180,7 @@ export default function MapPage() {
             return (
               <div
                 key={g.id}
-                style={{
-                  width: CELL,
-                  height: CELL,
-                  position: "relative",
-                }}
+                style={{ width: CELL, height: CELL, position: "relative" }}
                 title={`${g.id}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`}
               >
                 <button
@@ -215,7 +218,7 @@ export default function MapPage() {
           })}
         </div>
 
-        <div style={{ minWidth: 340 }}>
+        <div style={{ minWidth: 360 }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>Selected</h3>
 
           {!sel ? (
@@ -228,19 +231,19 @@ export default function MapPage() {
               <div><b>Locked</b>: {sel.locked ? "YES" : "NO"}</div>
 
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <a
-                  href={`/v1/me?grid=${encodeURIComponent(sel.id)}`}
-                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #333", textDecoration: "none" }}
+                <button
+                  onClick={() => setPanel("me")}
+                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #333", cursor: "pointer" }}
                 >
-                  → 命名へ
-                </a>
+                  命名（パネル）
+                </button>
 
-                <a
-                  href={`/v1/market?grid=${encodeURIComponent(sel.id)}`}
-                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #333", textDecoration: "none" }}
+                <button
+                  onClick={() => setPanel("market")}
+                  style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid #333", cursor: "pointer" }}
                 >
-                  → Marketへ
-                </a>
+                  Market（パネル）
+                </button>
 
                 <button
                   onClick={() => copyId(sel.id)}
@@ -250,13 +253,54 @@ export default function MapPage() {
                 </button>
               </div>
 
+              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", opacity: 0.9 }}>
+                <a href={meUrl} target="_blank" rel="noreferrer">命名（新タブ）</a>
+                <a href={marketUrl} target="_blank" rel="noreferrer">Market（新タブ）</a>
+              </div>
+
               <div style={{ marginTop: 10, opacity: 0.75, fontSize: 12 }}>
-                ※ 命名/出品は対象グリッドが選択された状態で開きます（コピペ不要）
+                ※ Mapを開いたまま命名/売買できます（コピペ不要）
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* 右スライドパネル */}
+      {panel !== "none" && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            right: 0,
+            width: "min(520px, 95vw)",
+            height: "100vh",
+            background: "#0d0d0d",
+            borderLeft: "1px solid #222",
+            zIndex: 80,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div style={{ padding: 10, borderBottom: "1px solid #222", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <div style={{ fontWeight: 900 }}>
+              {panel === "me" ? "命名" : "Market"} / {selectedId || "-"}
+            </div>
+            <button
+              onClick={() => setPanel("none")}
+              style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid #333", cursor: "pointer" }}
+            >
+              Close
+            </button>
+          </div>
+
+          <iframe
+            key={`${panel}:${selectedId}`}
+            src={panel === "me" ? meUrl : marketUrl}
+            style={{ flex: 1, width: "100%", border: "none" }}
+          />
+        </div>
+      )}
     </div>
   );
 }
