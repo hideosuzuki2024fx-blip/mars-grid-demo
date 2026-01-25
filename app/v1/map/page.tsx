@@ -81,7 +81,21 @@ export default function MapPage() {
     loadAll();
   }, []);
 
-  const dims = useMemo(() => {
+  
+  // URL grid -> select
+  useEffect(() => {
+    if (!gridParamId) return;
+    if (sel?.id === gridParamId) return;
+    const g = grids.find((x) => x.id === gridParamId);
+    if (g) setSel(g);
+  }, [gridParamId, grids]);
+
+  // select -> URL grid (keep in sync)
+  useEffect(() => {
+    if (!sel) return;
+    if (sel.id === gridParamId) return;
+    setGridParamId(sel.id);
+  }, [sel]);const dims = useMemo(() => {
     let maxR = 0, maxC = 0;
     for (const g of grids) {
       if (g.r > maxR) maxR = g.r;
@@ -248,7 +262,7 @@ export default function MapPage() {
                 }
               >
                 <button
-                  onClick={() => setSel(g)}
+                  onClick={() => { setSel(g); setGridParamId(g.id); }}
                   style={{
                     width: "100%",
                     height: "100%",
