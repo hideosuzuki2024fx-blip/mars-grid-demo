@@ -23,7 +23,8 @@ type Listing = {
 type PanelMode = "none" | "me" | "market";
 
 export default function MapPage() {
-  const [grids, setGrids] = useState<Grid[]>([]);
+  const { gridId: gridParamId, setGridId: setGridParamId } = useGridParam();
+const [grids, setGrids] = useState<Grid[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [sel, setSel] = useState<Grid | null>(null);
 
@@ -90,14 +91,16 @@ export default function MapPage() {
     if (sel?.id === gridParamId) return;
     const g = grids.find((x) => x.id === gridParamId);
     if (g) setSel(g);
-  }, [gridParamId, grids]);
+  }, [gridParamId, grids, sel]);
 
   // select -> URL grid (keep in sync)
   useEffect(() => {
     if (!sel) return;
     if (sel.id === gridParamId) return;
     setGridParamId(sel.id);
-  }, [sel]);const dims = useMemo(() => {
+  }, [sel, gridParamId, setGridParamId]);
+
+  const dims = useMemo(() => {
     let maxR = 0, maxC = 0;
     for (const g of grids) {
       if (g.r > maxR) maxR = g.r;
@@ -424,5 +427,6 @@ export default function MapPage() {
     </div>
   );
 }
+
 
 
