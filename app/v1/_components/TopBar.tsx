@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type MeResponse = {
   ok: boolean;
@@ -10,6 +11,8 @@ type MeResponse = {
 };
 
 export default function TopBar() {
+  const sp = useSearchParams();
+  const embed = sp.get("embed") === "1";
   const [me, setMe] = useState<MeResponse | null>(null);
 
   async function load() {
@@ -24,7 +27,11 @@ export default function TopBar() {
 
   useEffect(() => {
     load();
+    const t = setInterval(load, 10000); // 10秒ごとに自動更新
+    return () => clearInterval(t);
   }, []);
+
+  if (embed) return null;
 
   const joined = !!me?.ok && !!me?.user;
   const handle = joined ? me!.user!.handle : "-";

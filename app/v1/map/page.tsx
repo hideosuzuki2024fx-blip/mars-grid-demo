@@ -11,16 +11,27 @@ type Grid = {
   owner_handle: string | null;
 };
 
+type Listing = {
+  id: string;
+  grid_id: string;
+  price: number;
+  seller_handle: string;
+};
+
 type PanelMode = "none" | "me" | "market";
 
 export default function MapPage() {
   const [grids, setGrids] = useState<Grid[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
   const [sel, setSel] = useState<Grid | null>(null);
+
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [myHandle, setMyHandle] = useState<string | null>(null);
 
-  // ズーム（1x/1.5x/2x）
+  const [busy, setBusy] = useState(false);
+
+  // ズーム
   const [zoom, setZoom] = useState<1 | 1.5 | 2>(1);
   const BASE_CELL = 32;
   const CELL = Math.round(BASE_CELL * zoom);
@@ -28,6 +39,12 @@ export default function MapPage() {
 
   // Mapを開いたまま操作する右パネル
   const [panel, setPanel] = useState<PanelMode>("none");
+
+  const listingByGrid = useMemo(() => {
+    const m: Record<string, Listing> = {};
+    for (const l of listings) m[l.grid_id] = l;
+    return m;
+  }, [listings]);
 
   async function loadMe() {
     try {
@@ -39,26 +56,33 @@ export default function MapPage() {
     }
   }
 
-  async function load() {
+  async function loadAll() {
     try {
       setErr(null);
-      const r = await fetch("/api/v1/grids", { cache: "no-store" });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error ?? "GRIDS_FAILED");
-      setGrids(j.grids);
+      const [rg, rm] = await Promise.all([
+        fetch("/api/v1/grids", { cache: "no-store" }),
+        fetch("/api/v1/market", { cache: "no-store" }),
+      ]);
+
+      const jg = await rg.json();
+      if (!jg.ok) throw new Error(jg.error ?? "GRIDS_FAILED");
+      setGrids(jg.grids);
+
+      const jm = await rm.json();
+      if (!jm.ok) throw new Error(jm.error ?? "MARKET_FAILED");
+      setListings(jm.listings);
     } catch (e: any) {
-      setErr(e?.message ?? "GRIDS_FAILED");
+      setErr(e?.message ?? "LOAD_FAILED");
     }
   }
 
   useEffect(() => {
     loadMe();
-    load();
+    loadAll();
   }, []);
 
   const dims = useMemo(() => {
-    let maxR = 0,
-      maxC = 0;
+    let maxR = 0, maxC = 0;
     for (const g of grids) {
       if (g.r > maxR) maxR = g.r;
       if (g.c > maxC) maxC = g.c;
@@ -90,14 +114,47 @@ export default function MapPage() {
   function borderFor(g: Grid) {
     const isSel = sel?.id === g.id;
     if (isSel) return "3px solid #4AA3FF";
+
+    // 出品中は見えるように枠を強める（lockedでもあるが明示）
+    const listed = !!listingByGrid[g.id];
+    if (listed) return "3px solid #FF4AA3";
+
     if (g.locked) return "3px solid #F7D94C";
     if (isMine(g)) return "2px solid rgba(255,255,255,0.85)";
     return "1px solid #444";
   }
 
+  async function buySelected() {
+    if (!sel) return;
+    const l = listingByGrid[sel.id];
+    if (!l) return;
+
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await fetch("/api/v1/market/buy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ listingId: l.id }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error ?? "BUY_FAILED");
+      await loadMe();
+      await loadAll();
+    } catch (e: any) {
+      setErr(e?.message ?? "BUY_FAILED");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const selectedId = sel?.id ?? "";
-  const meUrl = selectedId ? `/v1/me?grid=${encodeURIComponent(selectedId)}` : "/v1/me";
-  const marketUrl = selectedId ? `/v1/market?grid=${encodeURIComponent(selectedId)}` : "/v1/market";
+  const meUrl = selectedId ? `/v1/me?grid=${encodeURIComponent(selectedId)}&embed=1` : "/v1/me?embed=1";
+  const marketUrl = selectedId ? `/v1/market?grid=${encodeURIComponent(selectedId)}&embed=1` : "/v1/market?embed=1";
+
+  const selectedListing = selectedId ? listingByGrid[selectedId] : null;
+  const isListed = !!selectedListing;
+  const canBuy = isListed && selectedListing!.seller_handle !== myHandle;
 
   return (
     <div style={{ position: "relative" }}>
@@ -128,7 +185,7 @@ export default function MapPage() {
           </div>
 
           <button
-            onClick={load}
+            onClick={loadAll}
             style={{ padding: "6px 10px", borderRadius: 10, border: "1px solid #333", cursor: "pointer" }}
           >
             Reload
@@ -153,8 +210,8 @@ export default function MapPage() {
           未所有
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span style={{ width: 14, height: 14, background: "#111", borderRadius: 4, border: "3px solid #F7D94C" }} />
-          Locked
+          <span style={{ width: 14, height: 14, background: "#111", borderRadius: 4, border: "3px solid #FF4AA3" }} />
+          出品中
         </span>
       </div>
 
@@ -177,11 +234,18 @@ export default function MapPage() {
             const selected = sel?.id === g.id;
             const mine = isMine(g);
 
+            const listed = !!listingByGrid[g.id];
+            const price = listed ? listingByGrid[g.id].price : null;
+
             return (
               <div
                 key={g.id}
                 style={{ width: CELL, height: CELL, position: "relative" }}
-                title={`${g.id}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`}
+                title={
+                  listed
+                    ? `${g.id}\nFOR SALE: ${price} CX\nseller: ${listingByGrid[g.id].seller_handle}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
+                    : `${g.id}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
+                }
               >
                 <button
                   onClick={() => setSel(g)}
@@ -213,12 +277,30 @@ export default function MapPage() {
                     ★
                   </div>
                 )}
+                {listed && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 2,
+                      left: 3,
+                      fontSize: Math.max(9, Math.round(10 * zoom)),
+                      fontWeight: 900,
+                      color: "rgba(255,255,255,0.95)",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.65)",
+                      pointerEvents: "none",
+                      userSelect: "none",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {zoom >= 1.5 ? `${price}CX` : "SALE"}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
 
-        <div style={{ minWidth: 360 }}>
+        <div style={{ minWidth: 380 }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>Selected</h3>
 
           {!sel ? (
@@ -229,6 +311,36 @@ export default function MapPage() {
               <div><b>Owner</b>: {sel.owner_handle ?? "-"}</div>
               <div><b>Name</b>: {sel.name ?? "-"}</div>
               <div><b>Locked</b>: {sel.locked ? "YES" : "NO"}</div>
+
+              <div style={{ marginTop: 10, padding: 10, border: "1px solid #222", borderRadius: 12 }}>
+                <div style={{ fontWeight: 900, marginBottom: 6 }}>Market Status</div>
+                {!selectedListing ? (
+                  <div style={{ opacity: 0.85 }}>出品なし</div>
+                ) : (
+                  <div style={{ display: "grid", gap: 4 }}>
+                    <div><b>FOR SALE</b>: {selectedListing.price} CX</div>
+                    <div><b>Seller</b>: {selectedListing.seller_handle}</div>
+
+                    {selectedListing.seller_handle === myHandle ? (
+                      <div style={{ opacity: 0.85 }}>あなたの出品です</div>
+                    ) : (
+                      <button
+                        onClick={buySelected}
+                        disabled={busy || !canBuy}
+                        style={{
+                          marginTop: 8,
+                          padding: "10px 12px",
+                          borderRadius: 10,
+                          border: "1px solid #333",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {busy ? "..." : "Buy（ここで購入）"}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button
@@ -251,15 +363,6 @@ export default function MapPage() {
                 >
                   {copied === sel.id ? "Copied" : "IDコピー"}
                 </button>
-              </div>
-
-              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", opacity: 0.9 }}>
-                <a href={meUrl} target="_blank" rel="noreferrer">命名（新タブ）</a>
-                <a href={marketUrl} target="_blank" rel="noreferrer">Market（新タブ）</a>
-              </div>
-
-              <div style={{ marginTop: 10, opacity: 0.75, fontSize: 12 }}>
-                ※ Mapを開いたまま命名/売買できます（コピペ不要）
               </div>
             </div>
           )}
