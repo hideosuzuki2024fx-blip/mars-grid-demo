@@ -10,6 +10,17 @@ type Grid = {
   locked: boolean;
 };
 
+async function readJsonOrThrow(r: Response) {
+  const ct = r.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json")) {
+    const t = await r.text().catch(() => "");
+    throw new Error(`APIがJSONを返していません (HTTP ${r.status})`);
+  }
+  const j = await r.json();
+  if (!j?.ok) throw new Error(j?.error ?? `APIエラー (HTTP ${r.status})`);
+  return j;
+}
+
 export default function MePage() {
   const [user, setUser] = useState<any>(null);
   const [grids, setGrids] = useState<Grid[]>([]);
@@ -19,9 +30,8 @@ export default function MePage() {
 
   async function load() {
     setErr(null);
-    const r = await fetch("/api/v1/me");
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error ?? "ME_FAILED");
+    const r = await fetch("/api/v1/me", { cache: "no-store" });
+    const j = await readJsonOrThrow(r);
     setUser(j.user);
     setGrids(j.grids);
     const d: Record<string, string> = {};
@@ -40,9 +50,9 @@ export default function MePage() {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name: draft[gridId] ?? "" }),
+        cache: "no-store",
       });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error ?? "RENAME_FAILED");
+      await readJsonOrThrow(r);
       await load();
     } catch (e: any) {
       setErr(e?.message ?? "RENAME_FAILED");
