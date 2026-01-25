@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { Nav } from "../_shared/Nav";
 import { useGridParam } from "../_shared/useGridParam";
 type Grid = {
   id: string;
@@ -177,7 +176,6 @@ const [grids, setGrids] = useState<Grid[]>([]);
 
   return (
     <div style={{ position: "relative" }}>
-      <Nav />
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Map</h2>
 
@@ -427,6 +425,7 @@ const [grids, setGrids] = useState<Grid[]>([]);
     </div>
   );
 }
+
 
 
 

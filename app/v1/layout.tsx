@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
-import TopBar from "./_components/TopBar";
+import { Nav } from "./_shared/Nav";
 
 export default function V1Layout({ children }: { children: ReactNode }) {
   return (
-    <div>
-      <TopBar />
-      <div style={{ padding: 14 }}>
-        {children}
-      </div>
+    <div style={{ padding: 12 }}>
+      <Nav />
+      {children}
     </div>
   );
 }
