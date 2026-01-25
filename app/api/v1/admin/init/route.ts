@@ -18,9 +18,10 @@ export async function POST(req: NextRequest) {
     requireDbConfigured();
     assertAdmin(req);
 
-    // pgcrypto (gen_random_uuid) を使うための拡張
+    // uuid用（BUYで使用）
     await sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`;
 
+    // --- tables (create if missing) ---
     await sql`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -37,12 +38,9 @@ export async function POST(req: NextRequest) {
         c INT NOT NULL,
         owner_id TEXT NULL REFERENCES users(id),
         name TEXT NULL,
-        locked BOOLEAN NOT NULL DEFAULT false,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        locked BOOLEAN NOT NULL DEFAULT false
       )
     `;
-
-    await sql`CREATE INDEX IF NOT EXISTS idx_grids_owner ON grids(owner_id)`;
 
     await sql`
       CREATE TABLE IF NOT EXISTS listings (
@@ -55,8 +53,6 @@ export async function POST(req: NextRequest) {
       )
     `;
 
-    await sql`CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status)`;
-
     await sql`
       CREATE TABLE IF NOT EXISTS trades (
         id TEXT PRIMARY KEY,
@@ -67,6 +63,15 @@ export async function POST(req: NextRequest) {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `;
+
+    // --- migrations (add missing columns safely) ---
+    await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS name TEXT NULL`;
+    await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS locked BOOLEAN NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS owner_id TEXT NULL`;
+
+    // index
+    await sql`CREATE INDEX IF NOT EXISTS idx_grids_owner ON grids(owner_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status)`;
 
     // grids が空なら生成
     const count = await sql`SELECT COUNT(*)::int AS n FROM grids`;
