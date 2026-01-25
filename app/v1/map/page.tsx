@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { Nav } from "../_shared/Nav";
 import { useGridParam } from "../_shared/useGridParam";
 type Grid = {
   id: string;
@@ -173,6 +174,7 @@ export default function MapPage() {
 
   return (
     <div style={{ position: "relative" }}>
+      <Nav />
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Map</h2>
 
@@ -422,4 +424,5 @@ export default function MapPage() {
     </div>
   );
 }
+
 

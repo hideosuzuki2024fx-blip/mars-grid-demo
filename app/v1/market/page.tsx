@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGridParam } from "../_shared/useGridParam";
 
+import { Nav } from "../_shared/Nav";
 type Listing = {
   id: string;
   grid_id: string;
@@ -83,6 +84,7 @@ export default function MarketPage() {
 
   return (
     <div>
+      <Nav />
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Market</h2>
         <div style={{ opacity: 0.85 }}>
@@ -183,3 +185,4 @@ export default function MarketPage() {
     </div>
   );
 }
+
