@@ -1,22 +1,22 @@
 // lib/hex.ts
 // Hex grid helpers (axial coordinates, pointy-top) for the Opportunity local demo.
 //
-// Coordinate system (demo):
+coordinate system (demo):
 // - World space is XY in kilometers.
-// - Origin (0,0) is Opportunity landing point.
+// - Origin (0,0) is The landing point.
 // - +X is East (right), +Y is North (up).
 //
 // Hex math:
-// - Axial coords (q,r), cube coord is (x=q, z=r, y=-x-z)
+// - Axial coords (q,r), cube coords are (x=q, z=r, y=-x-z)
 // - Ring radius N => total cells = 1 + 3*N*(N+1)
 
 export type Axial = { q: number; r: number };
 
 export type HexCell = {
-  id: string;     // e.g. HEX_0_0
+  id: string; // e.g. HEX_0_0
   q: number;
   r: number;
-  xKm: number;    // center position in km
+  xKm: number; // center position in km
   yKm: number;
 };
 
@@ -53,12 +53,11 @@ export function generateHexCells(radiusRings: number, sizeKm: number): HexCell[]
   return cells;
 }
 
-export function hexCornersKmPointy(xKm: number< ) {
-  // 6 corners around a center for pointy-top hex.
-  // angle 0 points up. (We rotate by -90deg vs typical to align nicely.)
-  const corners: { xKm: number; yKm: number; }[] = [];
+export function hexCornersKmPoint(xKm: number, yKm: number, sizeKm: number) {
+  // 6 corners around a center for a pointy-top hex.
+  const corners: { xKm: number; yKm: number }[] = [];
   for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 180) * (60 * i - 30); // pointy-top
+    const angle = (Math.PI / 180) * (60 * i - 30);
     corners.push({
       xKm: xKm + sizeKm * Math.cos(angle),
       yKm: yKm + sizeKm * Math.sin(angle),
