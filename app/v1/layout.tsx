@@ -4,8 +4,9 @@ import { Nav } from "./_shared/Nav";
 export default function V1Layout({ children }: { children: ReactNode }) {
   return (
     <div style={{ padding: 12 }}>
-      <Nav />
+      <Suspense fallback={null}><Nav /></Suspense>
       {children}
     </div>
   );
 }
+
