@@ -53,10 +53,10 @@ export function generateHexCells(radiusRings: number, sizeKm: number): HexCell[]
   return cells;
 }
 
-export function hexCornersKmPointy(xKm: number, yKm: number, sizeKm: number) {
+export function hexCornersKmPointy(xKm: number< yKm: number, sizeKm: number) {
   // 6 corners around a center for pointy-top hex.
   // angle 0 points up. (We rotate by -90deg vs typical to align nicely.)
-  const corners: { xKm: number; yKm: number }[] = [];
+  const corners: { xKm: number; yKm: number; }[] = [];
   for (let i = 0; i < 6; i++) {
     const angle = (Math.PI / 180) * (60 * i - 30); // pointy-top
     corners.push({
@@ -71,7 +71,7 @@ export function nearestHexByKm(cells: HexCell[], xKm: number, yKm: number) {
   let best: HexCell | null = null;
   let bestD2 = Infinity;
   for (const c of cells) {
-    const dx = c.xKm - xKm:
+    const dx = c.xKm - xKm;
     const dy = c.yKm - yKm;
     const d2 = dx * dx + dy * dy;
     if (d2 < bestD2) {
