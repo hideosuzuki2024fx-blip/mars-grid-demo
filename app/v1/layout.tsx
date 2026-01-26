@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Nav } from "./_shared/Nav";
 
 export default function V1Layout({ children }: { children: ReactNode }) {
@@ -9,4 +9,5 @@ export default function V1Layout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
 
