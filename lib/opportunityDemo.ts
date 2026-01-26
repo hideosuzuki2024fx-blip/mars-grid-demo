@@ -90,7 +90,7 @@ export function buildOpportunityDemo(): OpportunityDemo {
     makeEvent(120, "Long drive milestone", "milestone", 4, -2),
     makeEvent(180, "Dust storm incoming", "anomaly", 3, -1),
     makeEvent(250, "Crater rim arrival (demo landmark)", "milestone", 5, -3),
-    makeEvent(310, "High-value mineral signature", "science", 6, 3),
+    makeEvent(310, "High-value mineral signature", "science", 6, -3),
     makeEvent(420, "Solar array cleaning event", "anomaly", 4, 1),
     makeEvent(520, "Farther traverse checkpoint", "drive", 7, -4),
   ];
