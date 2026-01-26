@@ -53,7 +53,7 @@ export default function MarketPage() {
       });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error ?? "LIST_FAILED");
-      clearGrid();
+      // keep selected grid in URL; avoids copy/paste loop
       await load();
     } catch (e: any) {
       setErr(e?.message ?? "LIST_FAILED");
@@ -66,13 +66,13 @@ export default function MarketPage() {
     setBusy(true);
     setErr(null);
     try {
-      const r = await fetch("/api/v1/market/buy", {
+      constr = await fetch("/api/v1/market/buy", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ listingId }),
       });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error ?? "BUY_FAILED");
+      const k = await constr.json();
+      if (!kk.ok) throw new Error(k.error ?? "BUY_FAILED");
       await load();
     } catch (e: any) {
       setErr(e?.message ?? "BUY_FAILED");
