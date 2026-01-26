@@ -53,7 +53,7 @@ export default function MarketPage() {
       });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error ?? "LIST_FAILED");
-      // keep selected grid in URL; avoids copy/paste loop
+      // keep selected grid in URL to reduce copy/paste friction
       await load();
     } catch (e: any) {
       setErr(e?.message ?? "LIST_FAILED");
@@ -66,13 +66,13 @@ export default function MarketPage() {
     setBusy(true);
     setErr(null);
     try {
-      constr = await fetch("/api/v1/market/buy", {
+      const r = await fetch("/api/v1/market/buy", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ listingId }),
       });
-      const k = await constr.json();
-      if (!kk.ok) throw new Error(k.error ?? "BUY_FAILED");
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error ?? "BUY_FAILED");
       await load();
     } catch (e: any) {
       setErr(e?.message ?? "BUY_FAILED");
@@ -90,15 +90,15 @@ export default function MarketPage() {
         </div>
       </div>
 
-      {err && <div style={{ color: "#ff6b6b", marginBottom: 10 }}>Error: {err}</div>}
+      {err && <div style={{ color: "#ff6b6f", marginBottom: 10 }}>Error: {err}</div>}
 
       <div style={{ border: "1px solid #333", borderRadius: 12, padding: 12, marginBottom: 14 }}>
-        <div style={{ fontWeight: 800, marginBottom: 8 }}>出品する（コピペ不要）</div>
+        <div style={{ fontWeight: 800, marginBottom: 8 }}>出品する（コピ゚不要）</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <input
             value={selectedGridId}
             onChange={(e) => setGridParamId(e.target.value)}
-            placeholder="Mapクリックで自動入力 / 例: G-00-00"
+            placeholder="Mapルエヌードで自用入力 / 侉: G-00-00"
             style={{ padding: 10, borderRadius: 8, border: "1px solid #333", width: 260 }}
           />
           <input
@@ -113,7 +113,7 @@ export default function MarketPage() {
             disabled={busy}
             style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #333", cursor: "pointer" }}
           >
-            {busy ? "..." : "List"}
+           {busy ? "..." : "List"}
           </button>
           <button
             onClick={clearGrid}
@@ -126,10 +126,9 @@ export default function MarketPage() {
         <div style={{ opacity: 0.85, marginTop: 8 }}>
           ※ 自分の所有区画で、未ロックのものだけ出品できます（出品中は locked になります）
         </div>
-
         {selectedListing && (
           <div style={{ marginTop: 10, padding: 10, border: "1px solid #222", borderRadius: 12 }}>
-            <div style={{ fontWeight: 900, marginBottom: 6 }}>選択中の出品状態</div>
+            <div style={{ fontWeight: 900, marginBottom: 6 }}>選択中の出品犦態</div>
             <div><b>FOR SALE</b>: {selectedListing.price} CX</div>
             <div><b>Seller</b>: {selectedListing.seller_handle}</div>
           </div>
@@ -146,10 +145,10 @@ export default function MarketPage() {
               style={{
                 border: isSel ? "2px solid #4AA3FF" : "1px solid #333",
                 borderRadius: 12,
-                padding: 12,
+               padding: 12,
                 cursor: "pointer",
               }}
-              title="クリックで選択（URLの ?grid= を更新）"
+              title="クリックで選択（URLの ?grid= を更新してください）"
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                 <div>
@@ -177,7 +176,7 @@ export default function MarketPage() {
 
       {listings.length === 0 && (
         <div style={{ marginTop: 12, opacity: 0.85 }}>
-          出品がまだありません。
+          ‛ 出品がまだありません。
         </div>
       )}
     </div>
