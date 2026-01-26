@@ -15,9 +15,9 @@ function normalizeName(raw: unknown) {
   return s; // ""もOK（命名解除）
 }
 
-export async function GET(_req: NextRequest, ctx: { params: { gridId: string } }) {
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ gridId: string }> }) {
   try {
-    const gridId = String(ctx.params.gridId ?? "").trim();
+    const gridId = String((await ctx.params).gridId ?? "").trim();
     return noStore(NextResponse.json({ ok: true, gridId, hint: "Use PATCH with {name}" }));
   } catch (e: any) {
     return noStore(NextResponse.json({ ok: false, error: e?.message ?? "GET_FAILED" }, { status: 500 }));
@@ -48,9 +48,9 @@ async function rename(req: NextRequest, gridId: string) {
   return noStore(NextResponse.json({ ok: true, grid: r.rows[0] }));
 }
 
-export async function PATCH(req: NextRequest, ctx: { params: { gridId: string } }) {
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ gridId: string }> }) {
   try {
-    const gridId = String(ctx.params.gridId ?? "").trim();
+    const gridId = String((await ctx.params).gridId ?? "").trim();
     if (!gridId) return noStore(NextResponse.json({ ok: false, error: "INVALID_GRID" }, { status: 400 }));
     return await rename(req, gridId);
   } catch (e: any) {
