@@ -53,7 +53,7 @@ export function generateHexCells(radiusRings: number, sizeKm: number): HexCell[]
   return cells;
 }
 
-export function hexCornersKmPointy(xKm: number< yKm: number, sizeKm: number) {
+export function hexCornersKmPointy(xKm: number< ) {
   // 6 corners around a center for pointy-top hex.
   // angle 0 points up. (We rotate by -90deg vs typical to align nicely.)
   const corners: { xKm: number; yKm: number; }[] = [];
