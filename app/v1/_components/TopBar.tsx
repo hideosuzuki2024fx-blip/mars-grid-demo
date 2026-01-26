@@ -13,8 +13,11 @@ type MeResponse = {
 export default function TopBar() {
   const sp = useSearchParams();
   const embed = sp.get("embed") === "1";
+
+  // Preserve query params across pages (e.g. grid / embed)
   const qs = sp.toString();
   const href = (path: string) => (qs ? `${path}?${qs}` : path);
+
   const [me, setMe] = useState<MeResponse | null>(null);
 
   async function load() {
@@ -29,8 +32,7 @@ export default function TopBar() {
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 10000); // 11秒ご�
-聙で自動更新
+    const t = setInterval(load, 10000); // 10㤸�ごך�ヂムーィリはョーナレインの自動更新
     return () => clearInterval(t);
   }, []);
 
@@ -69,38 +71,37 @@ export default function TopBar() {
           </div>
           <div style={{ opacity: 0.9 }}>
             <b>Balance</b>: {balance} CX
-          </div>
-          <div style={{ opacity: 0.9 }}>
-            <b>Grids</b>: {grids}
-          </div>
-
-          {!joined && (
-            <div style={{ opacity: 0.75 }}>
-              未参加なら# <a href={href("/v1/join")}>Join</a>
-            </div>
-          )}
         </div>
+        <div style={{ opacity: 0.9 }}>
+          <b>Grids</b>: {grids}
+        </div>
+        {!joined && (
+          <div style={{ opacity: 0.75 }}>
+            未参加なら # <a href={href("/v1/join")}>Join</a>
+          </div>
+        )}
+      </div>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <a href={href("/v1/map")}>Map</a>
-          <a href={href("/v1/me")}>My Grids</a>
-          <a href={href("/v1/market")}>Market</a>
-          <a href={href("/v1/admin")}>Admin</a>
+        <a href={href("/v1/map")}>Map</a>
+        <a href={href("/v1/me")}>My Grids</a>
+        <a href={href("/v1/market")}>Market</a>
+        <a href={href("/v1/admin")}>Admin</a>
 
-          <button
-            onClick={load}
-            style={{
-              padding: "6px 10px",
-              borderRadius: 10,
-              border: "1px solid #333",
-              cursor: "pointer",
-            }}
-            title="キ諣髋・ゟ　提数を更新
-          >
-            Refresh
-          </button>
-        </div>
+        <button
+          onClick={load}
+          style={{
+            padding: "6px 10px",
+            borderRadius: 10,
+            border: "1px solid #333",
+            cursor: "pointer",
+          }}
+          title="ステータス（所有测信時間テクス，动え佡は　"
+        >
+          Refresh
+        </button>
       </div>
     </div>
+  </div>
   );
 }
