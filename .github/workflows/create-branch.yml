@@ -1,0 +1,30 @@
+name: Create Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: "Base branch to branch from"
+        required: true
+        default: "main"
+      new_branch:
+        description: "New branch name"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  create-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.base_branch }}
+          fetch-depth: 0
+      - name: Create and push branch
+        run: |
+          set -e
+          git checkout -b "${{ github.event.inputs.new_branch }}"
+          git push origin "${{ github.event.inputs.new_branch }}"
