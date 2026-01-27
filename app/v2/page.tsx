@@ -8,17 +8,22 @@ export default function V2IndexPage() {
         <ul className="space-y-2">
           <li>
             <a className="text-sky-700 underline" href="/v2/opportunity">
-              Opportunity / Hex Journal Demo
+              Opportunity / Hex Journal Demo（ローカルイベント）
+            </a>
+          </li>
+          <li>
+            <a className="text-sky-700 underline" href="/v2/map">
+              v2 Map（v1 を内包：所有/出品/売買をそのまま継承）
             </a>
           </li>
           <li>
             <a className="text-sky-700 underline" href="/v2/me">
-              My Page (Join / Resume / My grids)
+              My Page（Join / Resume / My grids）
             </a>
           </li>
           <li>
             <a className="text-sky-700 underline" href="/v1/map">
-              v1 Map (trade/operations)
+              v1 Map（旧UI：取引/操作）
             </a>
           </li>
         </ul>
