@@ -18,10 +18,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const handle = normalizeHandle(body.handle);
     if (!handle) {
-      return NextResponse.json(
-        { ok: false, error: "INVALID_HANDLE" },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "INVALID_HANDLE" }, { status: 400 });
     }
 
     const newId = crypto.randomUUID();
@@ -37,13 +34,19 @@ export async function POST(req: NextRequest) {
     const user = r.rows[0];
 
     const res = NextResponse.json({ ok: true, user });
+
+    // ░ 次回アクセスのため、セッションCookieではなく永和シe
+    // 例 : 30日(必要ならここを365日にしてOK)
     res.cookies.set({
       name: "cx_uid",
       value: user.id,
       httpOnly: true,
       sameSite: "lax",
       path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+      secure: process.env.NODE_ENV === "production",
     });
+
     return res;
   } catch (e: any) {
     return NextResponse.json(
