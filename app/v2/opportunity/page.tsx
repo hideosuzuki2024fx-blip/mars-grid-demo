@@ -17,12 +17,15 @@ export default function OpportunityDemoPage() {
                 Hex grid (N={demo.radiusRings}) with local “journal” events. Click a hex to inspect.
               </p>
             </div>
+
             <nav className="flex gap-3 text-sm">
               <a className="text-sky-700 underline" href="/v2/me">My Page</a>
+              <a className="text-sky-700 underline" href="/v2/map">v2 Map</a>
               <a className="text-sky-700 underline" href="/v1/map">v1 Map</a>
             </nav>
           </div>
         </header>
+
         <OpportunityClient demo={demo} />
       </div>
     </main>
