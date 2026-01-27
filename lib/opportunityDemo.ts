@@ -2,23 +2,18 @@
 // Demo scenario data for Opportunity-inspired "journal" events on a local hex grid.
 // NOTE: This file intentionally uses lightweight, local-only data (no external APIs).
 
-import {
-  generateHexCells,
-  axialToKmPointy,
-  axialDistance,
-  hexId,
-  type Axial,
-  type HexCell,
-} from "./hex";
+import { generateHexCells, axialToKmPointy, axialDistance, hexId } from "./hex";
+import type { Axial, HexCell } from "./hex";
 
-export type OpportunityEventKind =
-  | "landing"
-  | "drive"
-  | "science"
-  | "anomaly"
-  | "milestone";
+export enum OpportunityEventKind {
+  Landing = "landing",
+  Drive = "drive",
+  Science = "science",
+  Anomaly = "anomaly",
+  Milestone = "milestone",
+}
 
-export type OpportunityEvent = {
+export interface OpportunityEvent {
   id: string;
   sol: number; // mission sol (Martian day), demo-friendly
   title: string;
@@ -28,17 +23,17 @@ export type OpportunityEvent = {
   xKm: number;
   yKm: number;
   kmFromOrigin: number;
-};
+}
 
-export type OpportunityDemo = {
+export interface OpportunityDemo {
   radiusRings: number;
   sizeKm: number;
   cells: HexCell[];
   events: OpportunityEvent[];
-  eventsByCell: Record<string, OpportunityEvent[];
-};
+  eventsByCell: Record<string, OpportunityEvent[]>;
+}
 
-// Config tuned to the conversation:
+// Config tuned to the conversation
 // - radiusRings = 13 (total cells = 1 + 3*N*(N+1) = 547)
 // - roughly ~25km-ish local area (approx) with sizeKm chosen for viewport usability
 export const OPPORTUNITY_DEMO_CONFIG = {
@@ -83,16 +78,23 @@ export function buildOpportunityDemo(): OpportunityDemo {
   // Demo "journal" milestones (titles are inspired by well-known Opportunity-era concepts,
   // but coordinates here are simplified for gameplay).
   const rawEvents: OpportunityEvent[] = [
-    makeEvent(0, "Landing (Zero Day)", "landing", 0, 0, "Origin cell = landing site."),
-    makeEvent(7, "First panorama stitched", "science", 1, 0),
-    makeEvent(30, "Approach to a small crater", "drive", 2, -1),
-    makeEvent(60, "Outcrop analysis", "science", 2, 0),
-    makeEvent(120, "Long drive milestone", "milestone", 4, -2),
-    makeEvent(180, "Dust storm incoming", "anomaly", 3, -1),
-    makeEvent(250, "Crater rim arrival (demo landmark)", "milestone", 5, -3),
-    makeEvent(310, "High-value mineral signature", "science", 6, -3),
-    makeEvent(420, "Solar array cleaning event", "anomaly", 4, 1),
-    makeEvent(520, "Farther traverse checkpoint", "drive", 7, -4),
+    makeEvent(
+      0,
+      "Landing (Zero Day)",
+      OpportunityEventKind.Landing,
+      0,
+      0,
+      "Origin cell = landing site."
+    ),
+    makeEvent(7, "First panorama stitched", OpportunityEventKind.Science, 1, 0),
+    makeEvent(30, "Approach to a small crater", OpportunityEventKind.Drive, 2, -1),
+    makeEvent(60, "Outcrop analysis", OpportunityEventKind.Science, 2, 0),
+    makeEvent(120, "Long drive milestone", OpportunityEventKind.Milestone, 4, -2),
+    makeEvent(180, "Dust storm incoming", OpportunityEventKind.Anomaly, 3, -1),
+    makeEvent(250, "Crater rim arrival (demo landmark)", OpportunityEventKind.Milestone, 5, -3),
+    makeEvent(310, "High-value mineral signature", OpportunityEventKind.Science, 6, -3),
+    makeEvent(420, "Solar array cleaning event", OpportunityEventKind.Anomaly, 4, 1),
+    makeEvent(520, "Farther traverse checkpoint", OpportunityEventKind.Drive, 7, -4),
   ];
 
   // Ensure all events land inside the generated radius.
@@ -105,8 +107,7 @@ export function buildOpportunityDemo(): OpportunityDemo {
 
   const eventsByCell: Record<string, OpportunityEvent[]> = {};
   for (const e of events) (eventsByCell[e.cellId] ||= []).push(e);
-  for (const k of Object.keys(eventsByCell))
-    eventsByCell[k].sort((a, b) => a.sol - b.sol);
+  for (const k of Object.keys(eventsByCell)) eventsByCell[k].sort((a, b) => a.sol - b.sol);
 
   events.sort((a, b) => a.sol - b.sol);
   return { radiusRings, sizeKm, cells, events, eventsByCell };
