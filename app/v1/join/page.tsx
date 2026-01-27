@@ -18,7 +18,7 @@ export default function JoinPage() {
       });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error ?? "JOIN_FAILED");
-      location.href = "/v1/me";
+      location.href = "/v2/me";
     } catch (e: any) {
       setMsg(e?.message ?? "JOIN_FAILED");
     } finally {
@@ -31,6 +31,10 @@ export default function JoinPage() {
       <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>Join</h2>
       <p style={{ opacity: 0.9, marginBottom: 10 }}>
         ユーザー名を登録します（Cookieでセッション保持）。
+      </p>
+
+      <p style={{ opacity: 0.85, marginBottom: 10 }}>
+        Join後は <a href="/v2/me" style={{ textDecoration: "underline" }}>My Page</a> からいつでも冬回できます。
       </p>
 
       <input
@@ -58,6 +62,12 @@ export default function JoinPage() {
       >
         {busy ? "Joining..." : "Join"}
       </button>
+
+      <div style={{ marginTop: 12, opacity: 0.85 }}>
+        <a href="/v1/map" style={{ textDecoration: "underline" }}>v1 Mapへで</a>{" "}}
+        |
+        <a href="/v2/opportunity" style={{ textDecoration: "underline", marginLeft: 8 }}>Opportunity Demoへで</a>
+      </div>
 
       {msg && (
         <div style={{ marginTop: 12, color: "#ff6b6b" }}>
