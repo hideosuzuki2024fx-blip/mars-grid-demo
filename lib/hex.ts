@@ -1,7 +1,7 @@
 // lib/hex.ts
 // Hex grid helpers (axial coordinates, pointy-top) for the Opportunity local demo.
 //
-coordinate system (demo):
+// coordinate system (demo):
 // - World space is XY in kilometers.
 // - Origin (0,0) is The landing point.
 // - +X is East (right), +Y is North (up).
