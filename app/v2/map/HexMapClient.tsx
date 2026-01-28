@@ -4,93 +4,95 @@ import { useMemo, useState } from "react";
 import {
   generateHexCells,
   hexCornersKmPoint,
-  axialDistance,
   HexCell,
 } from "@/lib/hex";
 
-const HEX_SIZE_KM = 1;
+const HEX_SIZE_KM = 1;          // 1km per hex
+const MAX_RADIUS = 14;          // 上限（opportunity と揃える）
 
 export default function HexMapClient() {
-  const [radius, setRadius] = useState<number>(4);
+  // ===== state =====
+  const [radius, setRadius] = useState(4);
 
-  const allCells = useMemo(() => {
-    return generateHexCells(14, HEX_SIZE_KM);
-  }, []);
+  // ===== hex data =====
+  const hexes: HexCell[] = useMemo(() => {
+    return generateHexCells(radius, HEX_SIZE_KM);
+  }, [radius]);
 
-  const visibleCells = useMemo(() => {
-    return allCells.filter((c) =>
-      axialDistance({ q: 0, r: 0 }, { q: c.q, r: c.r }) <= radius
-    );
-  }, [allCells, radius]);
-
-  const viewBox = useMemo(() => {
-    if (visibleCells.length === 0) {
-      return "-10 -10 20 20";
+  // ===== viewBox 計算 =====
+  const view = useMemo(() => {
+    if (hexes.length === 0) {
+      return "-5 -5 10 10";
     }
 
-    const xs: number[] = [];
-    const ys: number[] = [];
+    const xs = hexes.map((h) => h.xKm);
+    const ys = hexes.map((h) => h.yKm);
 
-    for (const c of visibleCells) {
-      const corners = hexCornersKmPoint(c.xKm, c.yKm, HEX_SIZE_KM);
-      for (const p of corners) {
-        xs.push(p.xKm);
-        ys.push(p.yKm);
-      }
-    }
+    const minX = Math.min(...xs) - HEX_SIZE_KM * 2;
+    const maxX = Math.max(...xs) + HEX_SIZE_KM * 2;
+    const minY = Math.min(...ys) - HEX_SIZE_KM * 2;
+    const maxY = Math.max(...ys) + HEX_SIZE_KM * 2;
 
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
+    return `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
+  }, [hexes]);
 
-    return `${minX - 1} ${minY - 1} ${maxX - minX + 2} ${maxY - minY + 2}`;
-  }, [visibleCells]);
-
+  // ===== render =====
   return (
-    <div className="w-full h-full flex flex-col gap-2">
-      <div className="flex items-center gap-4 px-4">
-        <label className="text-sm">
-          Hex radius (rings): <b>{radius}</b>
-        </label>
+    <div className="flex h-full w-full flex-col">
+      {/* ===== controls ===== */}
+      <div className="flex items-center gap-4 border-b px-4 py-2 text-sm">
+        <div>
+          Hex radius: <b>{radius}</b>
+        </div>
         <input
           type="range"
           min={0}
-          max={14}
+          max={MAX_RADIUS}
           step={1}
           value={radius}
           onChange={(e) => setRadius(Number(e.target.value))}
           className="flex-1"
         />
+        <div className="opacity-60">
+          cells: {hexes.length}
+        </div>
       </div>
 
-      <div className="flex-1 border">
+      {/* ===== map ===== */}
+      <div className="flex-1 overflow-hidden">
         <svg
-          viewBox={viewBox}
-          width="100%"
-          height="100%"
-          preserveAspectRatio="xMidYMid meet"
+          viewBox={view}
+          className="h-full w-full bg-black"
         >
-          {visibleCells.map((cell: HexCell) => {
+          {/* axes (debug) */}
+          <line x1={-1000} y1={0} x2={1000} y2={0} stroke="#222" />
+          <line x1={0} y1={-1000} x2={0} y2={1000} stroke="#222" />
+
+          {/* hex cells */}
+          {hexes.map((hex) => {
             const corners = hexCornersKmPoint(
-              cell.xKm,
-              cell.yKm,
+              hex.xKm,
+              hex.yKm,
               HEX_SIZE_KM
             );
+
             const points = corners
               .map((p) => `${p.xKm},${p.yKm}`)
               .join(" ");
 
             return (
               <polygon
-                key={cell.id}
+                key={hex.id}
                 points={points}
-                fill="none"
-                stroke="#ff6a00"
+                fill="rgba(0, 200, 255, 0.08)"
+                stroke="rgba(0, 200, 255, 0.6)"
                 strokeWidth={0.05}
               />
             );
           })}
+
+          {/* center marker */}
+          <circle cx={0} cy={0} r={0.1} fill="red" />
         </svg>
       </div>
     </div>
