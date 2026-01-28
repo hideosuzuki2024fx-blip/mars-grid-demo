@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql, requireDbConfigured } from "@/lib/db";
 import { assertAdmin } from "@/lib/admin";
+import { buildOpportunityDemo } from "@/lib/opportunityDemo";
 
 export const runtime = "nodejs";
 
@@ -64,6 +65,20 @@ export async function POST(req: NextRequest) {
       )
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS events (
+        id TEXT PRIMARY KEY,
+        sol INT NOT NULL,
+        title TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        detail TEXT NULL,
+        cell_id TEXT NOT NULL,
+        x_km DOUBLE PRECISION NOT NULL,
+        y_km DOUBLE PRECISION NOT NULL,
+        km_from_origin DOUBLE PRECISION NOT NULL
+      )
+    `;
+
     // --- migrations (add missing columns safely) ---
     await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS name TEXT NULL`;
     await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS locked BOOLEAN NOT NULL DEFAULT false`;
@@ -75,6 +90,8 @@ export async function POST(req: NextRequest) {
     await sql`CREATE INDEX IF NOT EXISTS idx_grids_owner ON grids(owner_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_grids_hex ON grids(q, hex_r)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_events_cell ON events(cell_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_events_sol ON events(sol)`;
 
     // grids が空なら生成
     const count = await sql`SELECT COUNT(*)::int AS n FROM grids`;
@@ -96,6 +113,25 @@ export async function POST(req: NextRequest) {
       SET q = c - ${qOffset}, hex_r = r - ${rOffset}
       WHERE q IS NULL OR hex_r IS NULL
     `;
+
+    const demo = buildOpportunityDemo();
+    for (const event of demo.events) {
+      await sql`
+        INSERT INTO events (id, sol, title, kind, detail, cell_id, x_km, y_km, km_from_origin)
+        VALUES (
+          ${event.id},
+          ${event.sol},
+          ${event.title},
+          ${event.kind},
+          ${event.detail ?? null},
+          ${event.cellId},
+          ${event.xKm},
+          ${event.yKm},
+          ${event.kmFromOrigin}
+        )
+        ON CONFLICT (id) DO NOTHING
+      `;
+    }
 
     return NextResponse.json({ ok: true, rows: GRID_ROWS, cols: GRID_COLS });
   } catch (e: any) {
