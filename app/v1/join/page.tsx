@@ -34,7 +34,7 @@ export default function JoinPage() {
       </p>
 
       <p style={{ opacity: 0.85, marginBottom: 10 }}>
-        Join後は <a href="/v2/me" style={{ textDecoration: "underline" }}>My Page</a> からいつでも冬回できます。
+        Join後は <a href="/v2/me" style={{ textDecoration: "underline" }}>My Page</a> からいつでも巡回できます。
       </p>
 
       <input
@@ -64,9 +64,9 @@ export default function JoinPage() {
       </button>
 
       <div style={{ marginTop: 12, opacity: 0.85 }}>
-        <a href="/v1/map" style={{ textDecoration: "underline" }}>v1 Mapへで</a>{" "}}
+        <a href="/v1/map" style={{ textDecoration: "underline" }}>v1 Mapへ</a>{" "}
         |
-        <a href="/v2/opportunity" style={{ textDecoration: "underline", marginLeft: 8 }}>Opportunity Demoへで</a>
+        <a href="/v2/opportunity" style={{ textDecoration: "underline", marginLeft: 8 }}>Opportunity Demoへ</a>
       </div>
 
       {msg && (

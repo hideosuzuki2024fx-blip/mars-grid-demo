@@ -6,9 +6,11 @@ export default function V1Home() {
       </h1>
 
       <p style={{ opacity: 0.9, marginBottom: 14, lineHeight: 1.7 }}>
-        v1 は&��ツモです。？貘릅者アク#��スのぜめとは <b>My Grids(（\u/v1/me\) をブックマーク</b> しておじがと、いつでもおしあっても安仕操作に徸れませる。
-       <br />
-        ※ Join は同じ handle で熅行するよで、ったやラ゠ン悪いです。
+        v1 は長方形グリッドのデモです。初回は Join を行い、
+        <b> My Grids（/v1/me）をブックマーク</b> しておくと、
+        いつでも手軽に操作できます。
+        <br />
+        ※ Join は同じ handle で再実行できます（上書きではなくログイン扱いです）。
       </p>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}>
