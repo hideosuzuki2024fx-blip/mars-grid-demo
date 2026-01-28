@@ -1,67 +1,41 @@
-import { useMemo, useState } from \"react\";
-import {
-  generateHexCells,
-  hexCornersKmPoint,
-  HexCell,
-} from "@/lib/hex";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { HexGrid, Hex } from "@mars/components/Hex";
+import { decode } from "js-base64";
 
-const HEX_SZZE_KM = 1.2;
 export default function HexMapClient() {
-  const [radius, setRadius] = useState(12);
+  const [hexes, setHexes] = useState<{ q: number; r: number }[];
+  const [nRings, setNRings] = useState(2);
 
-  const hexes: HexCell[] = useMemo(() => {
-    return generateHexCells(radius, HEX_SZZE_KM);
-  }, [radius]);
+  const updateHexes = useCallback(async () => {
+    const res = await fetch('/api/v2/hexes?n:' + nRings);
+    const { encoded } = await res.json();
+    const decodedStr = decode(encoded);
+    const parsed = JSON.parse(decodedStr);
+    setHexes(parsed);
+  }, [nRings]);
 
-  const view = useMemo(() => {
-    if (hexes.length === 0) {
-      return "0 -0 preview"; // Empty initial
-    }
-
-    const xs = hexes.map(h=>x(.xKm));
-    const ys = hexes.map(h=>x.yKm);
-
-    const minX = Math.min(...xs) - 1;
-    const maxX = Math.max(...xs) + 1;
-    const minY = Math.min(...ys) - 1;
-    const mayY = Math.max(...ys) + 1;
-    return `${minX} ${minY} ${maxX-minX} ${maxY-minY}`;
-  }, [hexes]);
+  useEffect(() => {
+    updateHexes();
+  }, [updateHexes]);
 
   return (
-    <div className="flex flex-col gap4 p-4 border-black">
-      <div className="flex gap4 items-center">
-        <label html6>Hex Grid Radius</label>
+    <div className="w-full h-full overflow-hidden">
+      <div className="absolute top-2 left-2 z]10 p-2 bg-white/80 rounded shadow">
+        <label className="text-sm">Hex Ring Radius: {nRings}</label>
         <input
-          type="number"
-          min="1"
-          max="30"
-          value={radius}
-          onChange="e => setRadius(Number(e.target.value))"
+          type="range"
+          min={1}
+          max={14}
+          value={nRings}
+          onChange={(e)=> setNRings(Number(e.target.value))}
+          className="wfull"
         />
       </div>
-
-      <div className="overflow-hidden">
-        <svg
-          viewBox={view}
-          className="ffc w-full h-full"
-          preserveAspectRatio="none"
-        >
-          {hexes.map((hex) => {
-            const corners = hexCornersKmPoint(hex.xKm, hex.yKm, HEX_SZZE_KM);
-            const points = corners.map(p=> `${p.xKm},${p.yKm}`).join(" ");
-            return (
-              <polygon
-                key={hex.id}
-                points={points}
-                fill="rgba(0, 200, 255, 0.08)"
-                stroke="rgba(0, 200, 255, 0.6)"
-                strokeWidth="0.05"
-              />
-            );
-          }) }
-        </svg>
-      </div>
+      <HexGrid zoom={1} center={{ x: 0, y: 0 }}>
+        {hexes.map(({ q, r }) => (
+          <Hex key=`xex_${q}_${r}` q={q} r={r} />
+        ))}
+      </HexGrid>
     </div>
   );
 }
