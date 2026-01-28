@@ -68,9 +68,12 @@ export async function POST(req: NextRequest) {
     await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS name TEXT NULL`;
     await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS locked BOOLEAN NOT NULL DEFAULT false`;
     await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS owner_id TEXT NULL`;
+    await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS q INT`;
+    await sql`ALTER TABLE grids ADD COLUMN IF NOT EXISTS hex_r INT`;
 
     // index
     await sql`CREATE INDEX IF NOT EXISTS idx_grids_owner ON grids(owner_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_grids_hex ON grids(q, hex_r)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_listings_status ON listings(status)`;
 
     // grids が空なら生成
@@ -85,6 +88,14 @@ export async function POST(req: NextRequest) {
         }
       }
     }
+
+    const qOffset = Math.floor(GRID_COLS / 2);
+    const rOffset = Math.floor(GRID_ROWS / 2);
+    await sql`
+      UPDATE grids
+      SET q = c - ${qOffset}, hex_r = r - ${rOffset}
+      WHERE q IS NULL OR hex_r IS NULL
+    `;
 
     return NextResponse.json({ ok: true, rows: GRID_ROWS, cols: GRID_COLS });
   } catch (e: any) {

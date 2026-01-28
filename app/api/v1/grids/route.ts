@@ -8,7 +8,7 @@ export async function GET() {
     requireDbConfigured();
 
     const r = await sql`
-      SELECT g.id, g.r, g.c, g.name, g.locked,
+      SELECT g.id, g.r, g.c, g.q, g.hex_r, g.name, g.locked,
              u.handle AS owner_handle
       FROM grids g
       LEFT JOIN users u ON u.id = g.owner_id

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     const grids = await sql`
-      SELECT id, r, c, name, locked
+      SELECT id, r, c, q, hex_r, name, locked
       FROM grids
       WHERE owner_id = ${uid}
       ORDER BY r, c
