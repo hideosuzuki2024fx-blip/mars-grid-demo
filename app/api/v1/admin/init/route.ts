@@ -31,18 +31,22 @@ export async function POST(req: NextRequest) {
       )
     `;
 
-    await sql`
+    await sql
       CREATE TABLE IF NOT EXISTS grids (
         id TEXT PRIMARY KEY,
         r INT NOT NULL,
         c INT NOT NULL,
         owner_id TEXT NULL REFERENCES users(id),
         name TEXT NULL,
-        locked BOOLEAN NOT NULL DEFAULT false
+        locked BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
-    `;
+    ;
 
-    await sql`
+    -- Backward/forward compatible: add columns if the table already exists without them
+    await sqlALTER TABLE grids ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+    await sqlALTER TABLE grids ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();await sql`
       CREATE TABLE IF NOT EXISTS listings (
         id TEXT PRIMARY KEY,
         grid_id TEXT NOT NULL REFERENCES grids(id),
@@ -94,3 +98,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
