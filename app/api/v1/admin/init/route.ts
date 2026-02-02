@@ -30,9 +30,8 @@ export async function POST(req: NextRequest) {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `;
-
-    await sql
-      CREATE TABLE IF NOT EXISTS grids (
+await sql`
+CREATE TABLE IF NOT EXISTS grids (
         id TEXT PRIMARY KEY,
         r INT NOT NULL,
         c INT NOT NULL,
@@ -98,4 +97,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
 
