@@ -30,13 +30,6 @@ function hexPolygonPoints(cx: number, cy: number, size: number) {
   return points.join(" ");
 }
 
-function axialToPx(q: number, r: number, size: number) {
-  return {
-    x: size * Math.sqrt(3) * (q + r / 2),
-    y: size * 1.5 * r,
-  };
-}
-
 export default function HexMapClient() {
   const [grids, setGrids] = useState<Grid[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -108,10 +101,12 @@ export default function HexMapClient() {
   }
 
   const points = useMemo(() => {
+    const stepX = size * Math.sqrt(3);
+    const stepY = size * 1.5;
     return grids.map((g) => {
-      const q = g.q ?? g.c;
-      const p = axialToPx(q, g.r, size);
-      return { g, x: p.x, y: p.y };
+      const x = g.c * stepX + (g.r % 2 ? stepX * 0.5 : 0);
+      const y = g.r * stepY;
+      return { g, x, y };
     });
   }, [grids, size]);
 
@@ -193,7 +188,7 @@ export default function HexMapClient() {
 
           <svg
             className="h-[70vh] w-full rounded-xl bg-neutral-50"
-            viewBox={`${bounds.minX} ${-bounds.minY - bounds.height} ${bounds.width} ${bounds.height}`}
+            viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
             role="img"
             aria-label="v2 hex map"
           >
@@ -203,7 +198,7 @@ export default function HexMapClient() {
               return (
                 <g key={g.id}>
                   <polygon
-                    points={hexPolygonPoints(x, -y, size)}
+                    points={hexPolygonPoints(x, y, size)}
                     fill={fillFor(g)}
                     stroke={stroke.color}
                     strokeWidth={stroke.width}
@@ -211,10 +206,10 @@ export default function HexMapClient() {
                     style={{ cursor: "pointer" }}
                   />
                   {isMine(g) ? (
-                    <text x={x + size * 0.25} y={-y - size * 0.2} fontSize={size * 0.35} fontWeight={900} fill="#1f2937">★</text>
+                    <text x={x + size * 0.25} y={y - size * 0.2} fontSize={size * 0.35} fontWeight={900} fill="#1f2937">★</text>
                   ) : null}
                   {listed ? (
-                    <text x={x - size * 0.45} y={-y + size * 0.35} fontSize={size * 0.26} fontWeight={900} fill="#4c1d95">
+                    <text x={x - size * 0.45} y={y + size * 0.35} fontSize={size * 0.26} fontWeight={900} fill="#4c1d95">
                       {zoom >= 1.5 ? `${listingByGrid[g.id].price}CX` : "SALE"}
                     </text>
                   ) : null}
