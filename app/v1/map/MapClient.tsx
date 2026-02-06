@@ -36,8 +36,10 @@ const [grids, setGrids] = useState<Grid[]>([]);
   // ズーム
   const [zoom, setZoom] = useState<1 | 1.5 | 2>(1);
   const BASE_CELL = 32;
-  const CELL = Math.round(BASE_CELL * zoom);
-  const GAP = Math.max(3, Math.round(4 * zoom));
+  const HEX_W = Math.round(BASE_CELL * zoom);
+  const HEX_H = Math.round(HEX_W * 0.9);
+  const STEP_X = Math.round(HEX_W * 0.9);
+  const STEP_Y = Math.round(HEX_H * 0.78);
 
   // Mapを開いたまま操作する右パネル
   const [panel, setPanel] = useState<PanelMode>("none");
@@ -99,13 +101,23 @@ const [grids, setGrids] = useState<Grid[]>([]);
     setGridParamId(sel.id);
   }, [sel, gridParamId, setGridParamId]);
 
-  const dims = useMemo(() => {
-    let maxR = 0, maxC = 0;
+  const layout = useMemo(() => {
+    if (!grids.length) return { byId: {} as Record<string, { x: number; y: number }>, width: 0, height: 0 };
+    const byId: Record<string, { x: number; y: number }> = {};
+    let maxX = 0;
+    let maxY = 0;
     for (const g of grids) {
-      if (g.r > maxR) maxR = g.r;
-      if (g.c > maxC) maxC = g.c;
+      const x = g.c * STEP_X + (g.r % 2 ? Math.round(HEX_W / 2) : 0);
+      const y = g.r * STEP_Y;
+      byId[g.id] = { x, y };
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
     }
-    return { rows: maxR + 1, cols: maxC + 1 };
+    return {
+      byId,
+      width: maxX + HEX_W + 16,
+      height: maxY + HEX_H + 16,
+    };
   }, [grids]);
 
   async function copyId(id: string) {
@@ -236,86 +248,85 @@ const [grids, setGrids] = useState<Grid[]>([]);
       <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${Math.max(1, dims.cols)}, ${CELL}px)`,
-            gap: GAP,
             border: "1px solid #333",
             padding: 10,
             borderRadius: 12,
             maxWidth: "100%",
-            overflowX: "auto",
+            overflow: "auto",
           }}
         >
-          {grids.map((g) => {
-            const bg = colorFor(g);
-            const bd = borderFor(g);
-            const selected = sel?.id === g.id;
-            const mine = isMine(g);
+          <div style={{ position: "relative", width: layout.width, height: layout.height }}>
+            {grids.map((g) => {
+              const bg = colorFor(g);
+              const bd = borderFor(g);
+              const selected = sel?.id === g.id;
+              const mine = isMine(g);
+              const listed = !!listingByGrid[g.id];
+              const price = listed ? listingByGrid[g.id].price : null;
+              const pos = layout.byId[g.id] || { x: 0, y: 0 };
 
-            const listed = !!listingByGrid[g.id];
-            const price = listed ? listingByGrid[g.id].price : null;
-
-            return (
-              <div
-                key={g.id}
-                style={{ width: CELL, height: CELL, position: "relative" }}
-                title={
-                  listed
-                    ? `${g.id}\nFOR SALE: ${price} CX\nseller: ${listingByGrid[g.id].seller_handle}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
-                    : `${g.id}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
-                }
-              >
-                <button
-                  onClick={() => { setSel(g); setGridParamId(g.id); }}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    background: bg,
-                    border: bd,
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    transform: selected ? "scale(1.02)" : "none",
-                  }}
-                />
-                {mine && (
-                  <div
+              return (
+                <div
+                  key={g.id}
+                  style={{ width: HEX_W, height: HEX_H, position: "absolute", left: pos.x, top: pos.y }}
+                  title={
+                    listed
+                      ? `${g.id}\nFOR SALE: ${price} CX\nseller: ${listingByGrid[g.id].seller_handle}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
+                      : `${g.id}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
+                  }
+                >
+                  <button
+                    onClick={() => { setSel(g); setGridParamId(g.id); }}
                     style={{
-                      position: "absolute",
-                      top: 2,
-                      right: 3,
-                      fontSize: Math.max(10, Math.round(12 * zoom)),
-                      fontWeight: 900,
-                      color: "rgba(255,255,255,0.95)",
-                      textShadow: "0 1px 2px rgba(0,0,0,0.65)",
-                      pointerEvents: "none",
-                      userSelect: "none",
-                      lineHeight: 1,
+                      width: "100%",
+                      height: "100%",
+                      background: bg,
+                      border: bd,
+                      cursor: "pointer",
+                      transform: selected ? "scale(1.02)" : "none",
+                      clipPath: "polygon(25% 4%, 75% 4%, 98% 50%, 75% 96%, 25% 96%, 2% 50%)",
                     }}
-                  >
-                    ★
-                  </div>
-                )}
-                {listed && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 2,
-                      left: 3,
-                      fontSize: Math.max(9, Math.round(10 * zoom)),
-                      fontWeight: 900,
-                      color: "rgba(255,255,255,0.95)",
-                      textShadow: "0 1px 2px rgba(0,0,0,0.65)",
-                      pointerEvents: "none",
-                      userSelect: "none",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {zoom >= 1.5 ? `${price}CX` : "SALE"}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  />
+                  {mine && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: Math.max(3, Math.round(HEX_H * 0.14)),
+                        right: Math.max(8, Math.round(HEX_W * 0.27)),
+                        fontSize: Math.max(10, Math.round(12 * zoom)),
+                        fontWeight: 900,
+                        color: "rgba(255,255,255,0.95)",
+                        textShadow: "0 1px 2px rgba(0,0,0,0.65)",
+                        pointerEvents: "none",
+                        userSelect: "none",
+                        lineHeight: 1,
+                      }}
+                    >
+                      ★
+                    </div>
+                  )}
+                  {listed && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: Math.max(2, Math.round(HEX_H * 0.12)),
+                        left: Math.max(8, Math.round(HEX_W * 0.24)),
+                        fontSize: Math.max(9, Math.round(10 * zoom)),
+                        fontWeight: 900,
+                        color: "rgba(255,255,255,0.95)",
+                        textShadow: "0 1px 2px rgba(0,0,0,0.65)",
+                        pointerEvents: "none",
+                        userSelect: "none",
+                        lineHeight: 1,
+                      }}
+                    >
+                      {zoom >= 1.5 ? `${price}CX` : "SALE"}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div style={{ minWidth: 380 }}>
