@@ -1,51 +1,164 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { generateHexCells, hexCornersKmPoint, type HexCell } from "@/lib/hex";
+import { useEffect, useMemo, useState } from "react";
 
-function kmToSvg(xKm: number, yKm: number) {
-  return { x: xKm, y: -yKm };
+type Grid = {
+  id: string;
+  r: number;
+  c: number;
+  q?: number | null;
+  name: string | null;
+  locked: boolean;
+  owner_handle: string | null;
+};
+
+type Listing = {
+  id: string;
+  grid_id: string;
+  price: number;
+  seller_handle: string;
+};
+
+function hexPolygonPoints(cx: number, cy: number, size: number) {
+  const points: string[] = [];
+  for (let i = 0; i < 6; i += 1) {
+    const angle = (Math.PI / 180) * (60 * i - 30);
+    const x = cx + size * Math.cos(angle);
+    const y = cy + size * Math.sin(angle);
+    points.push(`${x},${y}`);
+  }
+  return points.join(" ");
 }
 
-function polygonPoints(cell: HexCell, sizeKm: number) {
-  const corners = hexCornersKmPoint(cell.xKm, cell.yKm, sizeKm);
-  return corners
-    .map((p) => {
-      const s = kmToSvg(p.xKm, p.yKm);
-      return `${s.x},${s.y}`;
-    })
-    .join(" ");
+function axialToPx(q: number, r: number, size: number) {
+  return {
+    x: size * Math.sqrt(3) * (q + r / 2),
+    y: size * 1.5 * r,
+  };
 }
 
 export default function HexMapClient() {
-  const [nRings, setNRings] = useState(4);
-  const sizeKm = 1.1;
-  const cells = useMemo(() => generateHexCells(nRings, sizeKm), [nRings]);
-  const [selected, setSelected] = useState("HEX_0_0");
+  const [grids, setGrids] = useState<Grid[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [myHandle, setMyHandle] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [zoom, setZoom] = useState<1 | 1.5 | 2>(1);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const selectedCell = useMemo(
-    () => cells.find((c) => c.id === selected) ?? null,
-    [cells, selected]
+  const size = 15 * zoom;
+
+  const listingByGrid = useMemo(() => {
+    const m: Record<string, Listing> = {};
+    for (const l of listings) m[l.grid_id] = l;
+    return m;
+  }, [listings]);
+
+  const selected = useMemo(
+    () => grids.find((g) => g.id === selectedId) ?? null,
+    [grids, selectedId]
   );
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
+  async function loadAll() {
+    try {
+      setErr(null);
+      const [rg, rm, rme] = await Promise.all([
+        fetch("/api/v1/grids", { cache: "no-store" }),
+        fetch("/api/v1/market", { cache: "no-store" }),
+        fetch("/api/v1/me", { cache: "no-store" }),
+      ]);
 
-  for (const c of cells) {
-    const corners = hexCornersKmPoint(c.xKm, c.yKm, sizeKm);
-    for (const p of corners) {
-      const s = kmToSvg(p.xKm, p.yKm);
-      minX = Math.min(minX, s.x);
-      minY = Math.min(minY, s.y);
-      maxX = Math.max(maxX, s.x);
-      maxY = Math.max(maxY, s.y);
+      const jg = await rg.json();
+      if (!jg.ok) throw new Error(jg.error ?? "GRIDS_FAILED");
+      setGrids(jg.grids ?? []);
+      if (!selectedId && jg.grids?.[0]?.id) setSelectedId(jg.grids[0].id);
+
+      const jm = await rm.json();
+      if (!jm.ok) throw new Error(jm.error ?? "MARKET_FAILED");
+      setListings(jm.listings ?? []);
+
+      const jme = await rme.json();
+      if (jme.ok && jme.user?.handle) setMyHandle(jme.user.handle);
+    } catch (e: any) {
+      setErr(e?.message ?? "LOAD_FAILED");
     }
   }
 
-  const pad = sizeKm * 2;
-  const viewBox = `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`;
+  useEffect(() => {
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function isMine(g: Grid) {
+    return !!g.owner_handle && !!myHandle && g.owner_handle === myHandle;
+  }
+
+  function fillFor(g: Grid) {
+    if (isMine(g)) return "#93C5FD";
+    if (g.owner_handle) return "#86EFAC";
+    return "#F8FAFC";
+  }
+
+  function strokeFor(g: Grid) {
+    if (selectedId === g.id) return { color: "#0284C7", width: 0.12 };
+    if (listingByGrid[g.id]) return { color: "#FF4AA3", width: 0.11 };
+    if (g.locked) return { color: "#EAB308", width: 0.1 };
+    if (isMine(g)) return { color: "#2563EB", width: 0.09 };
+    return { color: "#D4D4D8", width: 0.06 };
+  }
+
+  const points = useMemo(() => {
+    return grids.map((g) => {
+      const q = g.q ?? g.c;
+      const p = axialToPx(q, g.r, size);
+      return { g, x: p.x, y: p.y };
+    });
+  }, [grids, size]);
+
+  const bounds = useMemo(() => {
+    if (!points.length) return { minX: -20, minY: -20, width: 40, height: 40 };
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const p of points) {
+      minX = Math.min(minX, p.x - size);
+      minY = Math.min(minY, p.y - size);
+      maxX = Math.max(maxX, p.x + size);
+      maxY = Math.max(maxY, p.y + size);
+    }
+    const pad = size * 1.8;
+    return {
+      minX: minX - pad,
+      minY: minY - pad,
+      width: maxX - minX + pad * 2,
+      height: maxY - minY + pad * 2,
+    };
+  }, [points, size]);
+
+  async function buySelected() {
+    if (!selected) return;
+    const listing = listingByGrid[selected.id];
+    if (!listing) return;
+    setBusy(true);
+    try {
+      const r = await fetch("/api/v1/market/buy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ listingId: listing.id }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error ?? "BUY_FAILED");
+      await loadAll();
+    } catch (e: any) {
+      setErr(e?.message ?? "BUY_FAILED");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const selectedListing = selected ? listingByGrid[selected.id] : null;
+  const canBuy = !!selectedListing && selectedListing.seller_handle !== myHandle;
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl p-4 md:p-8">
@@ -54,10 +167,9 @@ export default function HexMapClient() {
           <div>
             <h1 className="text-2xl font-semibold">v2 Map</h1>
             <p className="text-sm text-neutral-300">
-              Hex map view (same rendering style as /v2/opportunity).
+              v1 と同じ所有/出品仕様を Hex map で表示
             </p>
           </div>
-
           <nav className="flex gap-3 text-sm">
             <a className="text-sky-300 underline" href="/v1/join">Join</a>
             <a className="text-sky-300 underline" href="/v2/me">My Page</a>
@@ -66,66 +178,95 @@ export default function HexMapClient() {
         </div>
       </header>
 
+      {err ? <div className="mt-3 text-sm text-rose-300">Error: {err}</div> : null}
+
       <section className="mt-4 grid gap-4 md:grid-cols-[1fr_320px]">
         <div className="rounded-2xl border bg-white p-3 shadow-sm">
           <div className="flex items-center justify-between gap-3 pb-2">
             <div className="text-sm text-neutral-700">
-              Selected: <span className="font-mono">{selected}</span>
+              Selected: <span className="font-mono">{selected?.id ?? "-"}</span>
             </div>
             <div className="text-xs text-neutral-600">
-              rings <span className="font-mono">{nRings}</span> / cells <span className="font-mono">{cells.length}</span>
+              cells <span className="font-mono">{grids.length}</span>
             </div>
           </div>
 
           <svg
             className="h-[70vh] w-full rounded-xl bg-neutral-50"
-            viewBox={viewBox}
+            viewBox={`${bounds.minX} ${-bounds.minY - bounds.height} ${bounds.width} ${bounds.height}`}
             role="img"
             aria-label="v2 hex map"
           >
-            <g>
-              {cells.map((c) => {
-                const isSelected = c.id === selected;
-                const fill = isSelected ? "#E0F2FE" : "#FAFAFA";
-                const stroke = isSelected ? "#0284C7" : "#D4D4D8";
-                return (
+            {points.map(({ g, x, y }) => {
+              const stroke = strokeFor(g);
+              const listed = !!listingByGrid[g.id];
+              return (
+                <g key={g.id}>
                   <polygon
-                    key={c.id}
-                    points={polygonPoints(c, sizeKm)}
-                    fill={fill}
-                    stroke={stroke}
-                    strokeWidth={0.06}
-                    onClick={() => setSelected(c.id)}
+                    points={hexPolygonPoints(x, -y, size)}
+                    fill={fillFor(g)}
+                    stroke={stroke.color}
+                    strokeWidth={stroke.width}
+                    onClick={() => setSelectedId(g.id)}
                     style={{ cursor: "pointer" }}
                   />
-                );
-              })}
-            </g>
+                  {isMine(g) ? (
+                    <text x={x + size * 0.25} y={-y - size * 0.2} fontSize={size * 0.35} fontWeight={900} fill="#1f2937">★</text>
+                  ) : null}
+                  {listed ? (
+                    <text x={x - size * 0.45} y={-y + size * 0.35} fontSize={size * 0.26} fontWeight={900} fill="#4c1d95">
+                      {zoom >= 1.5 ? `${listingByGrid[g.id].price}CX` : "SALE"}
+                    </text>
+                  ) : null}
+                </g>
+              );
+            })}
           </svg>
         </div>
 
-        <aside className="rounded-2xl border bg-white p-4 shadow-sm">
+        <aside className="rounded-2xl border bg-white p-4 shadow-sm text-sm text-neutral-700">
           <h2 className="text-base font-semibold text-neutral-900">Map controls</h2>
 
-          <label className="mt-3 block text-sm text-neutral-700">
-            Radius rings: <span className="font-mono">{nRings}</span>
-          </label>
-          <input
-            type="range"
-            min={1}
-            max={14}
-            value={nRings}
-            onChange={(e) => {
-              setNRings(Number(e.target.value));
-              setSelected("HEX_0_0");
-            }}
-            className="mt-2 h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-300"
-          />
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-xs text-neutral-500">Zoom</span>
+            {[1, 1.5, 2].map((z) => (
+              <button
+                key={z}
+                onClick={() => setZoom(z as 1 | 1.5 | 2)}
+                className={`rounded border px-2 py-1 text-xs ${zoom === z ? "border-sky-500 text-sky-700" : "border-neutral-300"}`}
+              >
+                {z}x
+              </button>
+            ))}
+            <button onClick={loadAll} className="ml-auto rounded border border-neutral-300 px-2 py-1 text-xs">
+              Reload
+            </button>
+          </div>
 
-          <div className="mt-4 rounded-xl border bg-neutral-50 p-3 text-sm text-neutral-700">
-            <div><b>ID</b>: {selectedCell?.id ?? "-"}</div>
-            <div><b>q</b>: {selectedCell?.q ?? "-"}</div>
-            <div><b>r</b>: {selectedCell?.r ?? "-"}</div>
+          <div className="mt-4 rounded-xl border bg-neutral-50 p-3">
+            <div><b>ID</b>: {selected?.id ?? "-"}</div>
+            <div><b>Owner</b>: {selected?.owner_handle ?? "-"}</div>
+            <div><b>Name</b>: {selected?.name ?? "-"}</div>
+            <div><b>Locked</b>: {selected?.locked ? "YES" : "NO"}</div>
+          </div>
+
+          <div className="mt-4 rounded-xl border bg-neutral-50 p-3">
+            <div className="font-semibold">Market Status</div>
+            {!selectedListing ? (
+              <div className="mt-1 text-xs text-neutral-600">出品なし</div>
+            ) : (
+              <div className="mt-1 space-y-1">
+                <div><b>FOR SALE</b>: {selectedListing.price} CX</div>
+                <div><b>Seller</b>: {selectedListing.seller_handle}</div>
+                <button
+                  onClick={buySelected}
+                  disabled={!canBuy || busy}
+                  className="mt-2 rounded border border-neutral-300 px-2 py-1 text-xs disabled:opacity-50"
+                >
+                  {busy ? "..." : "Buy"}
+                </button>
+              </div>
+            )}
           </div>
         </aside>
       </section>
