@@ -1,104 +1,133 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { generateHexCells, hexCornersKmPoint, type HexCell } from "@/lib/hex";
 
-type HexCoord = { q: number; r: number };
+function kmToSvg(xKm: number, yKm: number) {
+  return { x: xKm, y: -yKm };
+}
 
-function generateHexes(n: number): HexCoord[] {
-  const out: HexCoord[] = [];
-  for (let q = -n; q <= n; q += 1) {
-    const r1 = Math.max(-n, -q - n);
-    const r2 = Math.min(n, -q + n);
-    for (let r = r1; r <= r2; r += 1) {
-      out.push({ q, r });
-    }
-  }
-  return out;
+function polygonPoints(cell: HexCell, sizeKm: number) {
+  const corners = hexCornersKmPoint(cell.xKm, cell.yKm, sizeKm);
+  return corners
+    .map((p) => {
+      const s = kmToSvg(p.xKm, p.yKm);
+      return `${s.x},${s.y}`;
+    })
+    .join(" ");
 }
 
 export default function HexMapClient() {
   const [nRings, setNRings] = useState(4);
-  const hexes = useMemo(() => generateHexes(nRings), [nRings]);
-  const edgeLength = nRings * 2 + 1;
-  const links = [
-    { href: "/v1/join", label: "Join" },
-    { href: "/v2/me", label: "My Page" },
-    { href: "/v1/market", label: "Market" },
-    { href: "/v1/map", label: "v1 Map" },
-  ];
+  const sizeKm = 1.1;
+  const cells = useMemo(() => generateHexCells(nRings, sizeKm), [nRings]);
+  const [selected, setSelected] = useState("HEX_0_0");
+
+  const selectedCell = useMemo(
+    () => cells.find((c) => c.id === selected) ?? null,
+    [cells, selected]
+  );
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const c of cells) {
+    const corners = hexCornersKmPoint(c.xKm, c.yKm, sizeKm);
+    for (const p of corners) {
+      const s = kmToSvg(p.xKm, p.yKm);
+      minX = Math.min(minX, s.x);
+      minY = Math.min(minY, s.y);
+      maxX = Math.max(maxX, s.x);
+      maxY = Math.max(maxY, s.y);
+    }
+  }
+
+  const pad = sizeKm * 2;
+  const viewBox = `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`;
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl p-4 md:p-8">
-      <section className="rounded-3xl border border-cyan-300/20 bg-slate-950/70 p-6 shadow-[0_0_80px_rgba(56,189,248,0.15)] backdrop-blur md:p-8">
-        <p className="mb-3 inline-block rounded-full border border-cyan-300/40 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-cyan-200">
-          MARS GRID COMMAND
-        </p>
-        <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
-          Hex Sector Visualizer
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm text-slate-300 md:text-base">
-          リング半径を調整して、探索対象セクター数をリアルタイム確認します。
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {links.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="rounded-lg border border-cyan-300/40 bg-slate-900/70 px-3 py-2 text-xs font-semibold tracking-wide text-cyan-100 transition hover:border-cyan-200 hover:bg-slate-800"
-            >
-              {item.label}
-            </a>
-          ))}
-        </div>
-      </section>
+      <header className="space-y-2">
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-semibold">v2 Map</h1>
+            <p className="text-sm text-neutral-300">
+              Hex map view (same rendering style as /v2/opportunity).
+            </p>
+          </div>
 
-      <section className="mt-5 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-cyan-300/20 bg-slate-900/75 p-4 backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/80">Radius</p>
-          <p className="mt-1 text-2xl font-bold text-white">{nRings}</p>
+          <nav className="flex gap-3 text-sm">
+            <a className="text-sky-300 underline" href="/v1/join">Join</a>
+            <a className="text-sky-300 underline" href="/v2/me">My Page</a>
+            <a className="text-sky-300 underline" href="/v1/map">v1 Map</a>
+          </nav>
         </div>
-        <div className="rounded-2xl border border-cyan-300/20 bg-slate-900/75 p-4 backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/80">Hex Count</p>
-          <p className="mt-1 text-2xl font-bold text-white">{hexes.length}</p>
-        </div>
-        <div className="rounded-2xl border border-cyan-300/20 bg-slate-900/75 p-4 backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/80">Grid Width</p>
-          <p className="mt-1 text-2xl font-bold text-white">{edgeLength}</p>
-        </div>
-      </section>
+      </header>
 
-      <section className="mt-5 rounded-2xl border border-cyan-300/20 bg-slate-900/75 p-5 backdrop-blur">
-        <label className="mb-2 block text-sm font-semibold text-slate-200">
-          Hex Ring Radius: {nRings}
-        </label>
-        <input
-          type="range"
-          min={1}
-          max={14}
-          value={nRings}
-          onChange={(e) => setNRings(Number(e.target.value))}
-          className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-700 accent-cyan-300"
-        />
-      </section>
-
-      <section className="mt-5 rounded-2xl border border-cyan-300/20 bg-slate-900/75 p-4 backdrop-blur md:p-5">
-        <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-7">
-          {hexes.map(({ q, r }) => (
-            <div
-              key={`hex_${q}_${r}`}
-              className="relative flex h-16 items-center justify-center border border-cyan-300/30 bg-slate-950/85 text-center transition hover:-translate-y-0.5 hover:border-cyan-200/70 hover:shadow-[0_0_18px_rgba(34,211,238,0.25)]"
-              style={{
-                clipPath: "polygon(25% 5%, 75% 5%, 98% 50%, 75% 95%, 25% 95%, 2% 50%)",
-                marginTop: q % 2 === 0 ? "0px" : "18px",
-              }}
-            >
-              <div>
-                <span className="text-[10px] uppercase tracking-[0.12em] text-slate-400">sector</span>
-                <p className="text-xs font-semibold text-cyan-100">{`q:${q} / r:${r}`}</p>
-              </div>
+      <section className="mt-4 grid gap-4 md:grid-cols-[1fr_320px]">
+        <div className="rounded-2xl border bg-white p-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3 pb-2">
+            <div className="text-sm text-neutral-700">
+              Selected: <span className="font-mono">{selected}</span>
             </div>
-          ))}
+            <div className="text-xs text-neutral-600">
+              rings <span className="font-mono">{nRings}</span> / cells <span className="font-mono">{cells.length}</span>
+            </div>
+          </div>
+
+          <svg
+            className="h-[70vh] w-full rounded-xl bg-neutral-50"
+            viewBox={viewBox}
+            role="img"
+            aria-label="v2 hex map"
+          >
+            <g>
+              {cells.map((c) => {
+                const isSelected = c.id === selected;
+                const fill = isSelected ? "#E0F2FE" : "#FAFAFA";
+                const stroke = isSelected ? "#0284C7" : "#D4D4D8";
+                return (
+                  <polygon
+                    key={c.id}
+                    points={polygonPoints(c, sizeKm)}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={0.06}
+                    onClick={() => setSelected(c.id)}
+                    style={{ cursor: "pointer" }}
+                  />
+                );
+              })}
+            </g>
+          </svg>
         </div>
+
+        <aside className="rounded-2xl border bg-white p-4 shadow-sm">
+          <h2 className="text-base font-semibold text-neutral-900">Map controls</h2>
+
+          <label className="mt-3 block text-sm text-neutral-700">
+            Radius rings: <span className="font-mono">{nRings}</span>
+          </label>
+          <input
+            type="range"
+            min={1}
+            max={14}
+            value={nRings}
+            onChange={(e) => {
+              setNRings(Number(e.target.value));
+              setSelected("HEX_0_0");
+            }}
+            className="mt-2 h-2 w-full cursor-pointer appearance-none rounded-lg bg-neutral-300"
+          />
+
+          <div className="mt-4 rounded-xl border bg-neutral-50 p-3 text-sm text-neutral-700">
+            <div><b>ID</b>: {selectedCell?.id ?? "-"}</div>
+            <div><b>q</b>: {selectedCell?.q ?? "-"}</div>
+            <div><b>r</b>: {selectedCell?.r ?? "-"}</div>
+          </div>
+        </aside>
       </section>
     </main>
   );
