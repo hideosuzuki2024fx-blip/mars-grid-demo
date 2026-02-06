@@ -20,6 +20,12 @@ export default function HexMapClient() {
   const [nRings, setNRings] = useState(3);
   const hexes = useMemo(() => generateHexes(nRings), [nRings]);
   const edgeLength = nRings * 2 + 1;
+  const links = [
+    { href: "/v1/join", label: "Join" },
+    { href: "/v2/me", label: "My Page" },
+    { href: "/v1/market", label: "Market" },
+    { href: "/v1/map", label: "v1 Map" },
+  ];
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl p-4 md:p-8">
@@ -33,6 +39,17 @@ export default function HexMapClient() {
         <p className="mt-3 max-w-2xl text-sm text-slate-300 md:text-base">
           リング半径を調整して、探索対象セクター数をリアルタイム確認します。
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {links.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="rounded-lg border border-cyan-300/40 bg-slate-900/70 px-3 py-2 text-xs font-semibold tracking-wide text-cyan-100 transition hover:border-cyan-200 hover:bg-slate-800"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
       </section>
 
       <section className="mt-5 grid gap-4 md:grid-cols-3">
@@ -65,14 +82,20 @@ export default function HexMapClient() {
       </section>
 
       <section className="mt-5 rounded-2xl border border-cyan-300/20 bg-slate-900/75 p-4 backdrop-blur md:p-5">
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-7">
           {hexes.map(({ q, r }) => (
             <div
               key={`hex_${q}_${r}`}
-              className="rounded-xl border border-cyan-300/20 bg-slate-950/80 px-2 py-2 text-center transition hover:-translate-y-0.5 hover:border-cyan-200/60 hover:shadow-[0_0_18px_rgba(34,211,238,0.25)]"
+              className="relative flex h-16 items-center justify-center border border-cyan-300/30 bg-slate-950/85 text-center transition hover:-translate-y-0.5 hover:border-cyan-200/70 hover:shadow-[0_0_18px_rgba(34,211,238,0.25)]"
+              style={{
+                clipPath: "polygon(25% 5%, 75% 5%, 98% 50%, 75% 95%, 25% 95%, 2% 50%)",
+                marginTop: q % 2 === 0 ? "0px" : "18px",
+              }}
             >
-              <span className="text-[10px] uppercase tracking-[0.12em] text-slate-400">sector</span>
-              <p className="text-xs font-semibold text-cyan-100">{`q:${q} / r:${r}`}</p>
+              <div>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-slate-400">sector</span>
+                <p className="text-xs font-semibold text-cyan-100">{`q:${q} / r:${r}`}</p>
+              </div>
             </div>
           ))}
         </div>
