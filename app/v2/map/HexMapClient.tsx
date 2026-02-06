@@ -87,17 +87,17 @@ export default function HexMapClient() {
   }
 
   function fillFor(g: Grid) {
-    if (isMine(g)) return "#93C5FD";
-    if (g.owner_handle) return "#86EFAC";
-    return "#F8FAFC";
+    if (isMine(g)) return "#1d4ed8";
+    if (g.owner_handle) return "#166534";
+    return "#111827";
   }
 
   function strokeFor(g: Grid) {
-    if (selectedId === g.id) return { color: "#0284C7", width: 0.12 };
-    if (listingByGrid[g.id]) return { color: "#FF4AA3", width: 0.11 };
-    if (g.locked) return { color: "#EAB308", width: 0.1 };
-    if (isMine(g)) return { color: "#2563EB", width: 0.09 };
-    return { color: "#D4D4D8", width: 0.06 };
+    if (selectedId === g.id) return { color: "#38bdf8", width: 1.8 };
+    if (listingByGrid[g.id]) return { color: "#f472b6", width: 1.6 };
+    if (g.locked) return { color: "#facc15", width: 1.4 };
+    if (isMine(g)) return { color: "#93c5fd", width: 1.2 };
+    return { color: "#94a3b8", width: 1 };
   }
 
   const points = useMemo(() => {
@@ -156,12 +156,12 @@ export default function HexMapClient() {
   const canBuy = !!selectedListing && selectedListing.seller_handle !== myHandle;
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-6xl p-4 md:p-8">
+    <main className="mx-auto min-h-screen w-full max-w-6xl p-4 text-slate-200 md:p-8">
       <header className="space-y-2">
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-2xl font-semibold">v2 Map</h1>
-            <p className="text-sm text-neutral-300">
+            <h1 className="text-2xl font-semibold text-slate-100">v2 Map</h1>
+            <p className="text-sm text-slate-400">
               v1 と同じ所有/出品仕様を Hex map で表示
             </p>
           </div>
@@ -176,18 +176,18 @@ export default function HexMapClient() {
       {err ? <div className="mt-3 text-sm text-rose-300">Error: {err}</div> : null}
 
       <section className="mt-4 grid gap-4 md:grid-cols-[1fr_320px]">
-        <div className="rounded-2xl border bg-white p-3 shadow-sm">
+        <div className="rounded-2xl border border-slate-700 bg-slate-900 p-3 shadow-sm">
           <div className="flex items-center justify-between gap-3 pb-2">
-            <div className="text-sm text-neutral-700">
+            <div className="text-sm text-slate-200">
               Selected: <span className="font-mono">{selected?.id ?? "-"}</span>
             </div>
-            <div className="text-xs text-neutral-600">
+            <div className="text-xs text-slate-400">
               cells <span className="font-mono">{grids.length}</span>
             </div>
           </div>
 
           <svg
-            className="h-[70vh] w-full rounded-xl bg-neutral-50"
+            className="h-[70vh] w-full rounded-xl bg-slate-950"
             viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
             role="img"
             aria-label="v2 hex map"
@@ -206,10 +206,10 @@ export default function HexMapClient() {
                     style={{ cursor: "pointer" }}
                   />
                   {isMine(g) ? (
-                    <text x={x + size * 0.25} y={y - size * 0.2} fontSize={size * 0.35} fontWeight={900} fill="#1f2937">★</text>
+                    <text x={x + size * 0.25} y={y - size * 0.2} fontSize={size * 0.35} fontWeight={900} fill="#f8fafc">★</text>
                   ) : null}
                   {listed ? (
-                    <text x={x - size * 0.45} y={y + size * 0.35} fontSize={size * 0.26} fontWeight={900} fill="#4c1d95">
+                    <text x={x - size * 0.45} y={y + size * 0.35} fontSize={size * 0.26} fontWeight={900} fill="#fbcfe8">
                       {zoom >= 1.5 ? `${listingByGrid[g.id].price}CX` : "SALE"}
                     </text>
                   ) : null}
@@ -219,36 +219,36 @@ export default function HexMapClient() {
           </svg>
         </div>
 
-        <aside className="rounded-2xl border bg-white p-4 shadow-sm text-sm text-neutral-700">
-          <h2 className="text-base font-semibold text-neutral-900">Map controls</h2>
+        <aside className="rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-sm text-sm text-slate-200">
+          <h2 className="text-base font-semibold text-slate-100">Map controls</h2>
 
           <div className="mt-3 flex items-center gap-2">
-            <span className="text-xs text-neutral-500">Zoom</span>
+            <span className="text-xs text-slate-400">Zoom</span>
             {[1, 1.5, 2].map((z) => (
               <button
                 key={z}
                 onClick={() => setZoom(z as 1 | 1.5 | 2)}
-                className={`rounded border px-2 py-1 text-xs ${zoom === z ? "border-sky-500 text-sky-700" : "border-neutral-300"}`}
+                className={`rounded border px-2 py-1 text-xs ${zoom === z ? "border-sky-400 text-sky-300" : "border-slate-600 text-slate-300"}`}
               >
                 {z}x
               </button>
             ))}
-            <button onClick={loadAll} className="ml-auto rounded border border-neutral-300 px-2 py-1 text-xs">
+            <button onClick={loadAll} className="ml-auto rounded border border-slate-600 px-2 py-1 text-xs text-slate-200">
               Reload
             </button>
           </div>
 
-          <div className="mt-4 rounded-xl border bg-neutral-50 p-3">
+          <div className="mt-4 rounded-xl border border-slate-700 bg-slate-800 p-3">
             <div><b>ID</b>: {selected?.id ?? "-"}</div>
             <div><b>Owner</b>: {selected?.owner_handle ?? "-"}</div>
             <div><b>Name</b>: {selected?.name ?? "-"}</div>
             <div><b>Locked</b>: {selected?.locked ? "YES" : "NO"}</div>
           </div>
 
-          <div className="mt-4 rounded-xl border bg-neutral-50 p-3">
+          <div className="mt-4 rounded-xl border border-slate-700 bg-slate-800 p-3">
             <div className="font-semibold">Market Status</div>
             {!selectedListing ? (
-              <div className="mt-1 text-xs text-neutral-600">出品なし</div>
+              <div className="mt-1 text-xs text-slate-400">出品なし</div>
             ) : (
               <div className="mt-1 space-y-1">
                 <div><b>FOR SALE</b>: {selectedListing.price} CX</div>
@@ -256,7 +256,7 @@ export default function HexMapClient() {
                 <button
                   onClick={buySelected}
                   disabled={!canBuy || busy}
-                  className="mt-2 rounded border border-neutral-300 px-2 py-1 text-xs disabled:opacity-50"
+                  className="mt-2 rounded border border-slate-600 px-2 py-1 text-xs text-slate-100 disabled:opacity-50"
                 >
                   {busy ? "..." : "Buy"}
                 </button>
