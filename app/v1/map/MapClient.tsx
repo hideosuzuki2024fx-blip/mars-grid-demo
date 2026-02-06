@@ -154,6 +154,23 @@ const [grids, setGrids] = useState<Grid[]>([]);
     return "1px solid #444";
   }
 
+  function parseBorder(border: string) {
+    const m = border.match(/^([0-9.]+)px\s+solid\s+(.+)$/);
+    if (!m) return { strokeWidth: 1, stroke: "#444" };
+    return { strokeWidth: Number(m[1]), stroke: m[2] };
+  }
+
+  function hexPointsAt(x: number, y: number) {
+    return [
+      `${x + HEX_W * 0.25},${y + HEX_H * 0.04}`,
+      `${x + HEX_W * 0.75},${y + HEX_H * 0.04}`,
+      `${x + HEX_W * 0.98},${y + HEX_H * 0.5}`,
+      `${x + HEX_W * 0.75},${y + HEX_H * 0.96}`,
+      `${x + HEX_W * 0.25},${y + HEX_H * 0.96}`,
+      `${x + HEX_W * 0.02},${y + HEX_H * 0.5}`,
+    ].join(" ");
+  }
+
   async function buySelected() {
     if (!sel) return;
     const l = listingByGrid[sel.id];
@@ -255,78 +272,67 @@ const [grids, setGrids] = useState<Grid[]>([]);
             overflow: "auto",
           }}
         >
-          <div style={{ position: "relative", width: layout.width, height: layout.height }}>
+          <svg
+            viewBox={`0 0 ${layout.width} ${layout.height}`}
+            style={{ width: layout.width, height: layout.height, display: "block" }}
+            role="img"
+            aria-label="v1 map hex grid"
+          >
             {grids.map((g) => {
               const bg = colorFor(g);
-              const bd = borderFor(g);
-              const selected = sel?.id === g.id;
+              const border = parseBorder(borderFor(g));
               const mine = isMine(g);
               const listed = !!listingByGrid[g.id];
               const price = listed ? listingByGrid[g.id].price : null;
               const pos = layout.byId[g.id] || { x: 0, y: 0 };
 
               return (
-                <div
-                  key={g.id}
-                  style={{ width: HEX_W, height: HEX_H, position: "absolute", left: pos.x, top: pos.y }}
-                  title={
-                    listed
-                      ? `${g.id}\nFOR SALE: ${price} CX\nseller: ${listingByGrid[g.id].seller_handle}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
-                      : `${g.id}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
-                  }
-                >
-                  <button
-                    onClick={() => { setSel(g); setGridParamId(g.id); }}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      background: bg,
-                      border: bd,
-                      cursor: "pointer",
-                      transform: selected ? "scale(1.02)" : "none",
-                      clipPath: "polygon(25% 4%, 75% 4%, 98% 50%, 75% 96%, 25% 96%, 2% 50%)",
+                <g key={g.id}>
+                  <polygon
+                    points={hexPointsAt(pos.x, pos.y)}
+                    fill={bg}
+                    stroke={border.stroke}
+                    strokeWidth={border.strokeWidth}
+                    onClick={() => {
+                      setSel(g);
+                      setGridParamId(g.id);
                     }}
-                  />
+                    style={{ cursor: "pointer" }}
+                  >
+                    <title>
+                      {listed
+                        ? `${g.id}\nFOR SALE: ${price} CX\nseller: ${listingByGrid[g.id].seller_handle}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`
+                        : `${g.id}\nOwner: ${g.owner_handle ?? "-"}\nName: ${g.name ?? "-"}`}
+                    </title>
+                  </polygon>
                   {mine && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: Math.max(3, Math.round(HEX_H * 0.14)),
-                        right: Math.max(8, Math.round(HEX_W * 0.27)),
-                        fontSize: Math.max(10, Math.round(12 * zoom)),
-                        fontWeight: 900,
-                        color: "rgba(255,255,255,0.95)",
-                        textShadow: "0 1px 2px rgba(0,0,0,0.65)",
-                        pointerEvents: "none",
-                        userSelect: "none",
-                        lineHeight: 1,
-                      }}
+                    <text
+                      x={pos.x + HEX_W * 0.62}
+                      y={pos.y + HEX_H * 0.28}
+                      fontSize={Math.max(10, Math.round(12 * zoom))}
+                      fontWeight={900}
+                      fill="rgba(255,255,255,0.95)"
+                      style={{ pointerEvents: "none", userSelect: "none" }}
                     >
                       ★
-                    </div>
+                    </text>
                   )}
                   {listed && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: Math.max(2, Math.round(HEX_H * 0.12)),
-                        left: Math.max(8, Math.round(HEX_W * 0.24)),
-                        fontSize: Math.max(9, Math.round(10 * zoom)),
-                        fontWeight: 900,
-                        color: "rgba(255,255,255,0.95)",
-                        textShadow: "0 1px 2px rgba(0,0,0,0.65)",
-                        pointerEvents: "none",
-                        userSelect: "none",
-                        lineHeight: 1,
-                      }}
+                    <text
+                      x={pos.x + HEX_W * 0.28}
+                      y={pos.y + HEX_H * 0.78}
+                      fontSize={Math.max(9, Math.round(10 * zoom))}
+                      fontWeight={900}
+                      fill="rgba(255,255,255,0.95)"
+                      style={{ pointerEvents: "none", userSelect: "none" }}
                     >
                       {zoom >= 1.5 ? `${price}CX` : "SALE"}
-                    </div>
+                    </text>
                   )}
-                </div>
+                </g>
               );
             })}
-          </div>
+          </svg>
         </div>
 
         <div style={{ minWidth: 380 }}>
