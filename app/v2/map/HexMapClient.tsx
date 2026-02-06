@@ -17,7 +17,7 @@ function generateHexes(n: number): HexCoord[] {
 }
 
 export default function HexMapClient() {
-  const [nRings, setNRings] = useState(3);
+  const [nRings, setNRings] = useState(4);
   const hexes = useMemo(() => generateHexes(nRings), [nRings]);
   const edgeLength = nRings * 2 + 1;
   const links = [
@@ -74,7 +74,7 @@ export default function HexMapClient() {
         <input
           type="range"
           min={1}
-          max={8}
+          max={14}
           value={nRings}
           onChange={(e) => setNRings(Number(e.target.value))}
           className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-700 accent-cyan-300"
