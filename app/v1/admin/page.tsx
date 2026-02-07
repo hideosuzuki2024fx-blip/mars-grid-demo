@@ -8,6 +8,7 @@ export default function AdminPage() {
   const [perUser, setPerUser] = useState(3);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
     const k = localStorage.getItem("cx_admin_key") ?? "";
@@ -19,7 +20,28 @@ export default function AdminPage() {
     localStorage.setItem("cx_admin_key", v);
   }
 
-  async function call(path: string, body: any) {
+  function errorMessage(error: unknown, fallback: string) {
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
+  }
+
+  async function loadDevKey() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await fetch("/api/v1/admin/dev-key", { cache: "no-store" });
+      const j = (await r.json()) as { ok: boolean; key?: string; error?: string };
+      if (!j.ok || !j.key) throw new Error(j.error ?? "DEV_KEY_FAILED");
+      persist(j.key);
+      setMsg("Dev key loaded from server env (local development only).");
+    } catch (error: unknown) {
+      setMsg("Error: " + errorMessage(error, "DEV_KEY_FAILED"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function call(path: string, body: Record<string, unknown>) {
     setBusy(true);
     setMsg(null);
     try {
@@ -31,8 +53,8 @@ export default function AdminPage() {
       const j = await r.json();
       if (!j.ok) throw new Error(j.error ?? "ADMIN_FAILED");
       setMsg(JSON.stringify(j, null, 2));
-    } catch (e: any) {
-      setMsg("Error: " + (e?.message ?? "ADMIN_FAILED"));
+    } catch (error: unknown) {
+      setMsg("Error: " + errorMessage(error, "ADMIN_FAILED"));
     } finally {
       setBusy(false);
     }
@@ -53,8 +75,25 @@ export default function AdminPage() {
             value={key}
             onChange={(e) => persist(e.target.value)}
             placeholder="cx_admin_..."
+            type={showKey ? "text" : "password"}
             style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #333" }}
           />
+          <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              onClick={() => setShowKey((v) => !v)}
+              disabled={busy}
+              style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #333", cursor: "pointer" }}
+            >
+              {showKey ? "Hide key" : "Show key"}
+            </button>
+            <button
+              onClick={() => void loadDevKey()}
+              disabled={busy}
+              style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #333", cursor: "pointer" }}
+            >
+              Load dev key
+            </button>
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
