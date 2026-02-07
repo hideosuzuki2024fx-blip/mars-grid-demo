@@ -2,6 +2,15 @@
 
 Next.js (App Router) based demo for Mars grid map/game workflows.
 
+## Portfolio Navigation
+
+- Hub / Globe UI
+  - https://github.com/hideosuzuki2024fx-blip/mars-globe-web
+- Trade Demo (this repository)
+  - https://github.com/hideosuzuki2024fx-blip/mars-grid-demo
+- NFT / Chain Concept
+  - https://github.com/hideosuzuki2024fx-blip/cosmorwa-mars-nft
+
 ## Directory Structure
 
 - `app/`: App Router pages and API routes (`app/api/**/route.ts`).
