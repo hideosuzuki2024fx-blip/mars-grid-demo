@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import MapClient from "./MapClient";
+import TradeMapClient from "@/app/_components/TradeMapClient";
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <MapClient />
+      <TradeMapClient mode="v1" />
     </Suspense>
   );
 }
